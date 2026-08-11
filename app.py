@@ -11,7 +11,7 @@ from aiogram.filters import Command
 app = FastAPI()
 
 ADMIN_CARD = "5614686507631458"
-CARD_HOLDER = "JAXONGIR"
+CARD_HOLDER = "AZIZA BOYTEMIROVA"
 
 # Siz taqdim etgan Telegram Bot Tokeni
 BOT_TOKEN = "8882251329:AAFNqlxx7bYPVs2bMdfYB80Qol1PWzEUk-Y"
