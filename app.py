@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request, Form  # <--- Form shu yerga qo'shildi
 from fastapi.responses import HTMLResponse
 import random
 import sqlite3
 
 app = FastAPI()
+# Qolgan kodlar o'z holicha qoladi...
 
 def init_db():
     conn = sqlite3.connect("database.db")
