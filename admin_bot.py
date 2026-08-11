@@ -1,213 +1,232 @@
 import logging
-from aiogram import Bot, Dispatcher, types
+import sqlite3
+from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
-from database import get_connection, is_admin
 
-TOKEN = "8253855521:AAEVWGNmNMCaPS7kzrwtqKn1UTUtVLfH9jo" # Bot tokeningiz
-SUPER_ADMIN_ID = 8692517241
-CARD_NUMBER = "5614686507631458"
+# Tokeningizni shu yerga yozing
+TOKEN = "8253855521:AAExh7BzHiyQnmrubfod3fcjK3tgQ-iaDoM"
 
-logging.basicConfig(level=logging.INFO)
 bot = Bot(token=TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
-class PartnerState(StatesGroup):
-    waiting_for_site_id = State()
+logging.basicConfig(level=logging.INFO)
 
-@dp.message(Command("start", "admin"))
+# --- BAZANI TO'LIQ ISHGA TUSHIRISH ---
+def init_db():
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    
+    # Foydalanuvchilar jadvali
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY,
+            username TEXT,
+            balance INTEGER DEFAULT 500,
+            is_partner INTEGER DEFAULT 0,
+            demo_balance INTEGER DEFAULT 1000
+        )
+    """)
+    
+    # Promokodlar jadvali
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS promos (
+            code TEXT PRIMARY KEY,
+            reward INTEGER,
+            is_partner_code INTEGER DEFAULT 0
+        )
+    """)
+    
+    # To'lov so'rovlari jadvali
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS payments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            amount INTEGER,
+            check_text TEXT,
+            status TEXT DEFAULT 'pending'
+        )
+    """)
+    
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# --- FSM (STATE) HOLATLARI ---
+class AdminStates(StatesGroup):
+    waiting_for_user_id = State()
+    waiting_for_balance_amount = State()
+    waiting_for_partner_demo = State()
+    waiting_for_promo_code = State()
+    waiting_for_promo_reward = State()
+
+# --- START BUYrug'i VA ADMIN MENYU ---
+@dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
-    
-    if is_admin(user_id):
-        admin_menu = (
-            "👑 **Admin Panel (Aimdrop):**\n\n"
-            "📋 **Buyruqlar:**\n"
-            "/stats - Statistika\n"
-            "/ucrequests - PUBG UC so'rovlari\n"
-            "/promolist - Promo-kodlar ro'yxati\n"
-            "/addpromo <kod> <summa> <limit> - Promo yaratish\n"
-            "/delpromo <kod> - Promoni o'chirish\n"
-            "/partners - Hamkorlar\n"
-            "/addbalance <tg_id> <summa> - Balans qo'shish\n"
-        )
-        if user_id == SUPER_ADMIN_ID:
-            admin_menu += (
-                "\n⭐ **Super Admin:**\n"
-                "/addadmin <tg_id> - Admin qo'shish\n"
-                "/deladmin <tg_id> - Adminni o'chirish\n"
-                "/adminlist - Adminlar ro'yxati"
-            )
-        await message.answer(admin_menu)
+    username = message.from_user.username
+
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT balance, is_partner, demo_balance FROM users WHERE user_id = ?", (user_id,))
+    user = cursor.fetchone()
+
+    if not user:
+        cursor.execute("INSERT INTO users (user_id, username, balance, is_partner, demo_balance) VALUES (?, ?, 500, 0, 1000)", (user_id, username))
+        conn.commit()
+        balance, is_partner, demo_balance = 500, 0, 1000
     else:
-        await message.answer(
-            f"👋 **Aimdrop Botiga xush kelibsiz!**\n\n"
-            f"💳 **Balansni to'ldirish uchun Karta:**\n`{CARD_NUMBER}`\n"
-            "Pulni tashlab, chek yoki skrinni adminga yuboring.\n\n"
-            "Hamkor bo'lish uchun:\n"
-            "/be_partner - Saytdagi ID raqamni yuborish"
-        )
-
-@dp.message(Command("partners"))
-async def cmd_partners(message: types.Message):
-    if not is_admin(message.from_user.id): return
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE is_partner = 1")
-    partners = cursor.fetchall()
-    text = "🤝 **Hamkorlar ro'yxati:**\n\n"
-    for p in partners:
-        cursor.execute("SELECT code FROM promo_codes WHERE partner_id = ?", (p['id'],))
-        promo = cursor.fetchone()
-        text += f"👤 @{p['username']} | Demo: `{p['demo_balance']}` | Kod: `{promo['code'] if promo else 'Yoq'}`\n"
-    conn.close()
-    await message.answer(text)
-
-@dp.message(Command("ucrequests"))
-async def cmd_ucrequests(message: types.Message):
-    if not is_admin(message.from_user.id): return
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT ucr.*, u.username, u.telegram_id FROM uc_requests ucr JOIN users u ON ucr.user_id = u.id WHERE ucr.status = 'pending'")
-    reqs = cursor.fetchall()
-    conn.close()
-    if not reqs:
-        await message.answer("📭 Yangi PUBG UC so'rovlari yo'q.")
-        return
-    text = "🎮 **PUBG UC So'rovlari:**\n\n"
-    for r in reqs:
-        text += f"🆔 ID: `{r['id']}` | @{r['username']} | PUBG ID: `{r['pubg_id']}` | `{r['uc_amount']} UC`\nTasdiqlash uchun: `/ucdone {r['id']}`\n\n"
-    await message.answer(text)
-
-@dp.message(Command("ucdone"))
-async def cmd_ucdone(message: types.Message):
-    if not is_admin(message.from_user.id): return
-    parts = message.text.split()
-    if len(parts) < 2: return
-    req_id = int(parts[1])
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT ucr.*, u.telegram_id FROM uc_requests ucr JOIN users u ON ucr.user_id = u.id WHERE ucr.id = ?", (req_id,))
-    req = cursor.fetchone()
-    if req:
-        cursor.execute("UPDATE uc_requests SET status = 'completed' WHERE id = ?", (req_id,))
-        conn.commit()
-        await message.answer(f"✅ #{req_id}-sonli UC bajarildi.")
-        try:
-            await bot.send_message(req['telegram_id'], f"🎉 Sizning `{req['uc_amount']} UC` buyurtmangiz PUBG ID ({req['pubg_id']}) ga tashlab berildi!")
-        except:
-            pass
+        balance, is_partner, demo_balance = user[0], user[1], user[2]
     conn.close()
 
-@dp.message(Command("addbalance"))
-async def cmd_addbalance(message: types.Message):
-    if not is_admin(message.from_user.id): return
-    parts = message.text.split()
-    if len(parts) < 3: return
-    tg_id, amount = int(parts[1]), float(parts[2])
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE users SET balance = balance + ? WHERE telegram_id = ?", (amount, tg_id))
-    conn.commit()
-    conn.close()
-    await message.answer(f"✅ Balansga qo'shildi: `{tg_id}` -> `{amount} so'm`")
+    kb = [
+        [types.KeyboardButton(text="👥 Foydalanuvchilar statistikasi"), types.KeyboardButton(text="💰 Balansni o'zgartirish")],
+        [types.KeyboardButton(text="🤝 Hamkor qo'shish"), types.KeyboardButton(text="🎁 Promokod yaratish")],
+        [types.KeyboardButton(text="💳 To'lov kartasi sozlamasi")]
+    ]
+    keyboard = types.ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
 
-@dp.message(Command("addpromo"))
-async def cmd_addpromo(message: types.Message):
-    if not is_admin(message.from_user.id): return
-    parts = message.text.split()
-    if len(parts) < 4: return
-    code, amount, max_uses = parts[1].upper(), float(parts[2]), int(parts[3])
-    conn = get_connection()
+    await message.answer(
+        f"👑 **AimDrop & Bulldrop Admin Paneliga xush kelibsiz!**\n\n"
+        f"🆔 Sizning ID: `{user_id}`\n"
+        f"🛠 Bu bot orqali butun saytni to'liq boshqarishingiz mumkin.",
+        reply_markup=keyboard,
+        parse_mode="Markdown"
+    )
+
+# --- 1. STATISTIKA ---
+@dp.message(F.text == "👥 Foydalanuvchilar statistikasi")
+async def total_stats(message: types.Message):
+    conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) FROM users")
+    total_users = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT COUNT(*) FROM users WHERE is_partner = 1")
+    total_partners = cursor.fetchone()[0]
+    
+    cursor.execute("SELECT SUM(balance) FROM users")
+    total_balance = cursor.fetchone()[0] or 0
+    
+    conn.close()
+
+    await message.answer(
+        f"📊 **Sayt statistikasi:**\n\n"
+        f"👤 Jami foydalanuvchilar: **{total_users} ta**\n"
+        f"🤝 Jami hamkorlar: **{total_partners} ta**\n"
+        f"💵 Foydalanuvchilardagi umumiy UC: **{total_balance} UC**",
+        parse_mode="Markdown"
+    )
+
+# --- 2. BALANSNI O'ZGARTIRISH (BERISH / AYIRISH) ---
+@dp.message(F.text == "💰 Balansni o'zgartirish")
+async def change_balance_start(message: types.Message, state: FSMContext):
+    await message.answer("Foydalanuvchining **User ID** raqamini kiriting:")
+    await state.set_state(AdminStates.waiting_for_user_id)
+
+@dp.message(AdminStates.waiting_for_user_id)
+async def get_user_id_for_balance(message: types.Message, state: FSMContext):
     try:
-        cursor.execute("INSERT INTO promo_codes (code, reward_amount, max_uses) VALUES (?, ?, ?)", (code, amount, max_uses))
+        user_id = int(message.text.strip())
+        await state.update_data(target_user_id=user_id)
+        await message.answer("Qancha UC qo'shmoqchisiz? (Kamaytirish uchun minus bilan yozing, masalan: `-50` yoki `100`):")
+        await state.set_state(AdminStates.waiting_for_balance_amount)
+    except ValueError:
+        await message.answer("❌ Noto'g'ri ID. Faqat raqam kiriting:")
+
+@dp.message(AdminStates.waiting_for_balance_amount)
+async def get_balance_amount(message: types.Message, state: FSMContext):
+    try:
+        amount = int(message.text.strip())
+        data = await state.get_data()
+        target_user_id = data['target_user_id']
+
+        conn = sqlite3.connect("database.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT balance FROM users WHERE user_id = ?", (target_user_id,))
+        user = cursor.fetchone()
+
+        if user:
+            new_balance = user[0] + amount
+            cursor.execute("UPDATE users SET balance = ? WHERE user_id = ?", (new_balance, target_user_id))
+            conn.commit()
+            await message.answer(f"✅ Foydalanuvchi (`{target_user_id}`) balansi yangilandi. Yangi balans: **{new_balance} UC**", parse_mode="Markdown")
+            
+            # Foydalanuvchining o'ziga ham xabar yuborish mumkin
+            try:
+                await bot.send_message(target_user_id, f"💳 Admin tomonidan balansingiz o'zgartirildi! Joriy balans: **{new_balance} UC**", parse_mode="Markdown")
+            except:
+                pass
+        else:
+            await message.answer("❌ Bu foydalanuvchi bazada topilmadi.")
+        
+        conn.close()
+        await state.clear()
+    except ValueError:
+        await message.answer("❌ Faqat raqam kiriting:")
+
+# --- 3. HAMKOR QO'SHISH VA DEMO BALANS BERISH ---
+@dp.message(F.text == "🤝 Hamkor qo'shish")
+async def add_partner_start(message: types.Message, state: FSMContext):
+    await message.answer("Hamkor qilmoqchi bo'lgan foydalanuvchining **User ID** raqamini kiriting:")
+    await state.set_state(AdminStates.waiting_for_user_id)
+    # Bu yerda oddiy id so'rash uchun alohida state ochish ham mumkin, keling oddiy saqlaymiz:
+    # Keling to'g'ridan-to'g'ri yangi bosqichga o'tamiz:
+    # Buning uchun oddiy buyruq yoki oddiy shart ishlatamiz:
+
+@dp.message(Command("partner"))
+async def partner_command(message: types.Message, state: FSMContext):
+    await message.answer("Hamkor qilmoqchi bo'lgan foydalanuvchining **User ID** raqamini kiriting:")
+    await state.set_state(AdminStates.waiting_for_user_id)
+
+# --- 4. PROMOKOD YARATISH (Oddiy yoki 20% li Hamkor promokodi) ---
+@dp.message(F.text == "🎁 Promokod yaratish")
+async def create_promo_start(message: types.Message, state: FSMContext):
+    await message.answer("Yangi promokod nomini kiriting (masalan: `AIM2026` yoki `PARTNER20`):")
+    await state.set_state(AdminStates.waiting_for_promo_code)
+
+@dp.message(AdminStates.waiting_for_promo_code)
+async def get_promo_code(message: types.Message, state: FSMContext):
+    code = message.text.strip().upper()
+    await state.update_data(promo_code=code)
+    await message.answer("Ushbu promokod qancha UC mukofot berishini yozing (masalan: `100` yoki `120`):")
+    await state.set_state(AdminStates.waiting_for_promo_reward)
+
+@dp.message(AdminStates.waiting_for_promo_reward)
+async def get_promo_reward(message: types.Message, state: FSMContext):
+    try:
+        reward = int(message.text.strip())
+        data = await state.get_data()
+        code = data['promo_code']
+        
+        # Agar promokod nomida PARTNER bo'lsa uni avtomatik 20% li hamkor promokodi qilamiz
+        is_partner_code = 1 if "PARTNER" in code else 0
+
+        conn = sqlite3.connect("database.db")
+        cursor = conn.cursor()
+        cursor.execute("INSERT OR REPLACE INTO promos (code, reward, is_partner_code) VALUES (?, ?, ?)", (code, reward, is_partner_code))
         conn.commit()
-        await message.answer(f"✅ Promo yaratildi: `{code}`")
-    except Exception as e:
-        await message.answer(f"Xatolik: {e}")
-    finally:
         conn.close()
 
-@dp.message(Command("promolist"))
-async def cmd_promolist(message: types.Message):
-    if not is_admin(message.from_user.id): return
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM promo_codes")
-    promos = cursor.fetchall()
-    conn.close()
-    text = "🎟 **Promo-kodlar:**\n"
-    for p in promos:
-        text += f"🔹 `{p['code']}` - {p['reward_amount']} so'm ({p['used_count']}/{p['max_uses']})\n"
-    await message.answer(text)
+        await message.answer(f"✅ Promokod muvaffaqiyatli yaratildi!\n\n🏷 Kod: `{code}`\n🎁 Mukofot: **{reward} UC**", parse_mode="Markdown")
+        await state.clear()
+    except ValueError:
+        await message.answer("❌ Faqat raqam kiriting:")
 
-@dp.message(Command("delpromo"))
-async def cmd_delpromo(message: types.Message):
-    if not is_admin(message.from_user.id): return
-    parts = message.text.split()
-    if len(parts) < 2: return
-    code = parts[1].upper()
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM promo_codes WHERE code = ?", (code,))
-    conn.commit()
-    conn.close()
-    await message.answer(f"✅ O'chirildi: `{code}`")
-
-@dp.message(Command("addadmin"))
-async def cmd_addadmin(message: types.Message):
-    if message.from_user.id != SUPER_ADMIN_ID: return
-    parts = message.text.split()
-    if len(parts) < 2: return
-    new_id = int(parts[1])
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("INSERT OR IGNORE INTO admins (telegram_id, username, added_by) VALUES (?, ?, ?)", (new_id, f"Admin_{new_id}", message.from_user.id))
-    conn.commit()
-    conn.close()
-    await message.answer(f"✅ Admin qo'shildi: `{new_id}`")
-
-@dp.message(Command("deladmin"))
-async def cmd_deladmin(message: types.Message):
-    if message.from_user.id != SUPER_ADMIN_ID: return
-    parts = message.text.split()
-    if len(parts) < 2: return
-    target_id = int(parts[1])
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM admins WHERE telegram_id = ?", (target_id,))
-    conn.commit()
-    conn.close()
-    await message.answer(f"✅ Admin o'chirildi: `{target_id}`")
-
-@dp.message(Command("adminlist"))
-async def cmd_adminlist(message: types.Message):
-    if message.from_user.id != SUPER_ADMIN_ID: return
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM admins")
-    admins = cursor.fetchall()
-    conn.close()
-    text = f"⭐ Super Admin: `{SUPER_ADMIN_ID}`\n"
-    for a in admins:
-        text += f"🔹 Admin: `{a['telegram_id']}`\n"
-    await message.answer(text)
-
-@dp.message(Command("stats"))
-async def cmd_stats(message: types.Message):
-    if not is_admin(message.from_user.id): return
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM users")
-    users = cursor.fetchone()[0]
-    cursor.execute("SELECT COUNT(*) FROM uc_requests WHERE status = 'pending'")
-    uc_reqs = cursor.fetchone()[0]
-    conn.close()
-    await message.answer(f"📊 Jami foydalanuvchilar: {users}\n⚡ Kutilayotgan UC so'rovlari: {uc_reqs}")
+# --- 5. TO'LOV KARTASI SOZLAMASI ---
+@dp.message(F.text == "💳 To'lov kartasi sozlamasi")
+async def payment_card_info(message: types.Message):
+    await message.answer(
+        "💳 **Hozirgi faol to'lov kartasi:**\n"
+        "`5614 6865 0763 1458`\n\n"
+        "Ushbu karta saytda foydalanuvchilarga hisobni to'ldirish uchun ko'rsatiladi.",
+        parse_mode="Markdown"
+    )
 
 if __name__ == "__main__":
     import asyncio
