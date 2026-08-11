@@ -1,10 +1,9 @@
-from fastapi import FastAPI, Request, Form  # <--- Form shu yerga qo'shildi
+from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 import random
 import sqlite3
 
 app = FastAPI()
-# Qolgan kodlar o'z holicha qoladi...
 
 def init_db():
     conn = sqlite3.connect("database.db")
@@ -13,7 +12,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS users (
             user_id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT,
-            balance REAL DEFAULT 11.31,
+            balance REAL DEFAULT 0.02,
             is_partner INTEGER DEFAULT 0,
             partner_code TEXT,
             partner_earned REAL DEFAULT 0.0
@@ -28,7 +27,7 @@ def init_db():
             used_count INTEGER DEFAULT 0
         )
     """)
-    cursor.execute("INSERT OR IGNORE INTO promos (code, reward, is_partner, max_uses) VALUES ('RAVOX', 20.0, 1, 999999)")
+    cursor.execute("INSERT OR IGNORE INTO promos (code, reward, is_partner, max_uses) VALUES ('RAVOX', 0.20, 1, 999999)")
     cursor.execute("INSERT OR IGNORE INTO promos (code, reward, is_partner, max_uses) VALUES ('ULUOFD', 15.0, 0, 5)")
     conn.commit()
     conn.close()
@@ -37,8 +36,8 @@ init_db()
 
 CASES = {
     "oasis": {
-        "name": "Розовый оазис", 
-        "price": 24.03, 
+        "name": "РОЗОВЫЙ ОАЗИС", 
+        "price": 32.0, 
         "items": [
             {"name": "Kukri Ares", "val": 148.8, "img": "🔪"},
             {"name": "AWM BOOM", "val": 781.9, "img": "🎯"},
@@ -51,65 +50,71 @@ CASES = {
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    return HTMLResponse(content="""
+    return HTMLResponse(content=""""
     <!DOCTYPE html>
     <html lang="uz">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bulldrop - Official Site</title>
+        <title>Bulldrop</title>
         <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+            * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
             body { background: #0b0f19; color: #fff; min-height: 100vh; display: flex; flex-direction: column; }
             
-            /* Header */
-            header { display: flex; justify-content: space-between; align-items: center; background: #131b2e; padding: 15px 30px; border-bottom: 1px solid #1f2b45; }
-            .logo { font-size: 24px; font-weight: bold; color: #ff3366; display: flex; align-items: center; gap: 5px; }
-            .nav-menu { display: flex; gap: 20px; }
-            .nav-btn { background: transparent; color: #8b9bb4; border: none; cursor: pointer; font-weight: 600; font-size: 15px; transition: 0.2s; }
-            .nav-btn:hover, .nav-btn.active { color: #fff; }
-            .balance-box { background: #1a233a; border: 1px solid #2a3a5a; padding: 8px 16px; border-radius: 20px; font-weight: bold; color: #ffcc00; display: flex; align-items: center; gap: 8px; }
-            .balance-box button { background: #ff3366; color: #fff; border: none; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-weight: bold; }
+            /* Top Header Bar */
+            header { display: flex; justify-content: space-between; align-items: center; background: #131b2e; padding: 12px 20px; border-bottom: 1px solid #1f2b45; }
+            .logo { font-size: 22px; font-weight: bold; color: #ff3366; display: flex; align-items: center; gap: 5px; }
+            .header-right { display: flex; align-items: center; gap: 10px; }
+            
+            .balance-container { background: #1a233a; border: 1px solid #2a3a5a; padding: 6px 14px; border-radius: 20px; font-weight: bold; color: #ffcc00; display: flex; align-items: center; gap: 6px; font-size: 15px; }
+            .btn-plus { background: #ff3366; color: #fff; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 15px; display: flex; align-items: center; justify-content: center; }
 
-            /* Main Layout */
-            .container { max-width: 1200px; margin: 0 auto; width: 100%; padding: 30px 20px; flex: 1; }
+            /* Main Container */
+            .container { max-width: 1200px; margin: 0 auto; width: 100%; padding: 20px; flex: 1; padding-bottom: 90px; }
             .tab-content { display: none; }
             .tab-content.active { display: block; }
 
-            /* Case Card */
-            .cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
-            .case-card { background: #131b2e; border: 1px solid #1f2b45; border-radius: 16px; padding: 25px; text-align: center; cursor: pointer; transition: 0.3s; }
-            .case-card:hover { border-color: #ff3366; transform: translateY(-4px); }
-            .case-img { font-size: 64px; margin: 15px 0; }
-            .btn-open { background: #ff3366; color: #fff; border: none; padding: 12px; width: 100%; border-radius: 10px; font-weight: bold; margin-top: 15px; cursor: pointer; transition: 0.2s; }
-            .btn-open:hover { background: #e02855; }
+            /* Cases Grid */
+            .cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+            .case-card { background: #131b2e; border: 1px solid #1f2b45; border-radius: 14px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; }
+            .case-card:hover { border-color: #ff3366; transform: translateY(-3px); }
+            .case-img { font-size: 55px; margin: 10px 0; }
+            .btn-open { background: #ff3366; color: #fff; border: none; padding: 10px; width: 100%; border-radius: 8px; font-weight: bold; margin-top: 10px; cursor: pointer; }
 
-            /* Roulette Animation Window */
-            .roulette-container { display: none; background: #131b2e; border: 1px solid #1f2b45; border-radius: 16px; padding: 40px; text-align: center; max-width: 700px; margin: 40px auto; position: relative; }
-            .roulette-track-window { width: 100%; overflow: hidden; position: relative; height: 140px; background: #0b0f19; border-radius: 12px; border: 1px solid #2a3a5a; margin-bottom: 25px; }
-            .roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 4px; background: #ff3366; transform: translateX(-50%); z-index: 10; }
-            .roulette-track { display: flex; position: absolute; left: 0; top: 10px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }
-            .roulette-item { min-width: 120px; height: 120px; background: #1a233a; border: 1px solid #2a3a5a; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 8px; font-weight: bold; }
-            
+            /* Roulette Animation */
+            .roulette-container { background: #131b2e; border: 1px solid #1f2b45; border-radius: 14px; padding: 30px; text-align: center; max-width: 650px; margin: 20px auto; }
+            .roulette-track-window { width: 100%; overflow: hidden; position: relative; height: 130px; background: #0b0f19; border-radius: 10px; border: 1px solid #2a3a5a; margin-bottom: 20px; }
+            .roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #ff3366; transform: translateX(-50%); z-index: 10; }
+            .roulette-track { display: flex; position: absolute; left: 0; top: 8px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }
+            .roulette-item { min-width: 110px; height: 110px; background: #1a233a; border: 1px solid #2a3a5a; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 6px; font-weight: bold; }
+
             /* Panel / Forms */
-            .panel { background: #131b2e; border: 1px solid #1f2b45; padding: 30px; border-radius: 16px; max-width: 450px; margin: 0 auto; text-align: center; }
-            .form-group { margin-bottom: 15px; text-align: left; }
-            .form-group label { display: block; margin-bottom: 8px; color: #8b9bb4; font-size: 14px; }
-            .form-group input { width: 100%; padding: 12px; background: #0b0f19; border: 1px solid #1f2b45; color: #fff; border-radius: 10px; font-size: 15px; }
-            .btn-submit { background: #ff3366; color: #fff; border: none; padding: 12px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
+            .panel { background: #131b2e; border: 1px solid #1f2b45; padding: 25px; border-radius: 14px; max-width: 420px; margin: 0 auto; }
+            .form-group { margin-bottom: 15px; }
+            .form-group label { display: block; margin-bottom: 6px; color: #8b9bb4; font-size: 13px; }
+            .form-group input { width: 100%; padding: 11px; background: #0b0f19; border: 1px solid #1f2b45; color: #fff; border-radius: 8px; font-size: 14px; }
+            .btn-submit { background: #ff3366; color: #fff; border: none; padding: 11px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+            /* Profile Tab (Bulldrop Profile Style) */
+            .profile-card { background: #131b2e; border: 1px solid #1f2b45; padding: 25px; border-radius: 14px; max-width: 450px; margin: 0 auto; text-align: center; }
+            .avatar { font-size: 50px; background: #1a233a; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; border: 2px solid #ff3366; }
+
+            /* Bottom Navigation Bar (Bulldrop Style) */
+            .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #131b2e; border-top: 1px solid #1f2b45; display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
+            .nav-item { background: transparent; border: none; color: #8b9bb4; cursor: pointer; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-weight: 600; transition: 0.2s; }
+            .nav-item:hover, .nav-item.active { color: #ff3366; }
+            .nav-item span.icon { font-size: 20px; }
         </style>
     </head>
     <body>
 
         <header>
             <div class="logo">⚡ BULLDROP</div>
-            <div class="nav-menu">
-                <button class="nav-btn active" onclick="switchTab('cases', this)">Keyslar</button>
-                <button class="nav-btn" onclick="switchTab('promo', this)">Promokod</button>
-            </div>
-            <div class="balance-box">
-                <span id="balance">11.31</span> 🪙
-                <button onclick="switchTab('promo', document.querySelectorAll('.nav-btn')[1])">+</button>
+            <div class="header-right">
+                <div class="balance-container">
+                    <span id="balance">0.02</span> 🪙
+                    <button class="btn-plus" onclick="switchTab('wallet', document.querySelectorAll('.bottom-nav button')[1])">+</button>
+                </div>
             </div>
         </header>
 
@@ -117,53 +122,117 @@ async def index():
             
             <!-- CASES TAB -->
             <div id="cases-tab" class="tab-content active">
-                <h2 style="margin-bottom: 20px;">Ommabop Keyslar</h2>
+                <h3 style="margin-bottom: 15px; font-size: 18px;">Кейсы</h3>
                 <div class="cases-grid">
-                    <div class="case-card" onclick="startRoulette('oasis', 24.03)">
+                    <div class="case-card" onclick="startRoulette('oasis', 32.0)">
                         <div class="case-img">🦩</div>
-                        <h3>Розовый оазис</h3>
-                        <p style="color:#ffcc00; margin: 10px 0; font-weight: bold;">24.03 🪙</p>
-                        <button class="btn-open">Ochish</button>
+                        <h4 style="font-size: 14px;">РОЗОВЫЙ ОАЗИС</h4>
+                        <p style="color:#ffcc00; margin: 8px 0; font-weight: bold;">32.0 🪙</p>
+                        <button class="btn-open">Открыть за 32.0 🪙</button>
                     </div>
                 </div>
             </div>
 
             <!-- ROULETTE ANIMATION TAB -->
             <div id="roulette-tab" class="tab-content">
-                <div class="roulette-container" id="roulette-box" style="display: block;">
-                    <h2>Keys Ochilmoqda...</h2>
+                <div class="roulette-container">
+                    <h3 style="margin-bottom: 15px;">Кейс открывается...</h3>
                     <div class="roulette-track-window">
                         <div class="roulette-pointer"></div>
                         <div class="roulette-track" id="track"></div>
                     </div>
-                    <div id="win-result" style="font-size: 20px; font-weight: bold; color: #00ffcc; margin-bottom: 20px; min-height: 30px;"></div>
-                    <button class="btn-submit" onclick="backToCases()" id="back-btn" style="display:none;">Orqaga qaytish</button>
+                    <div id="win-result" style="font-size: 18px; font-weight: bold; color: #00ffcc; margin-bottom: 15px; min-height: 25px;"></div>
+                    <button class="btn-submit" onclick="switchTab('cases', document.querySelectorAll('.bottom-nav button')[0])" id="back-btn" style="display:none; max-width: 180px; margin: 0 auto;">К кейсам</button>
                 </div>
             </div>
 
-            <!-- PROMO TAB -->
+            <!-- WALLET TAB (20% Hamkor Promokodi faqat shu yerda ishlaydi) -->
+            <div id="wallet-tab" class="tab-content">
+                <div class="panel">
+                    <h3 style="margin-bottom: 15px;">Пополнить баланс</h3>
+                    <div class="form-group">
+                        <label>Сумма пополнения (🪙):</label>
+                        <input type="number" id="pay-amount" value="50">
+                    </div>
+                    <div class="form-group">
+                        <label>Промокод (20% бонус):</label>
+                        <input type="text" id="wallet-promo" placeholder="Например: RAVOX">
+                    </div>
+                    <button class="btn-submit" onclick="makePayment()">Пополнить баланс</button>
+                    <p id="wallet-msg" style="margin-top: 12px; font-size: 13px; text-align: center;"></p>
+                </div>
+            </div>
+
+            <!-- PROMO TAB (Keys promokodlari uchun) -->
             <div id="promo-tab" class="tab-content">
                 <div class="panel">
-                    <h2>Aktivatsiya Promokoda</h2>
-                    <p style="color: #8b9bb4; font-size: 13px; margin: 10px 0 20px 0;">Promokodni kiriting va sovg'aga ega bo'ling!</p>
+                    <h3 style="margin-bottom: 15px;">Активация промокода</h3>
                     <div class="form-group">
-                        <input type="text" id="promo-input" placeholder="Masalan: RAVOX / ULUOFD">
+                        <input type="text" id="promo-input" placeholder="Введите промокод...">
                     </div>
-                    <button class="btn-submit" onclick="activatePromo()">Aktivirovat</button>
-                    <p id="promo-msg" style="margin-top: 15px; font-weight: 500;"></p>
+                    <button class="btn-submit" onclick="activatePromo()">Активировать</button>
+                    <p id="promo-msg" style="margin-top: 12px; font-size: 13px; text-align: center;"></p>
+                </div>
+            </div>
+
+            <!-- PROFILE TAB (Bulldrop kabinet) -->
+            <div id="profile-tab" class="tab-content">
+                <div class="profile-card">
+                    <div class="avatar">🦹‍♂️</div>
+                    <h3 style="margin-bottom: 5px;">MUBORAKXON...</h3>
+                    <p style="color: #8b9bb4; font-size: 13px; margin-bottom: 20px;">ID: 9758659</p>
+                    <button class="btn-submit" style="background: #1a233a; border: 1px solid #2a3a5a;" onclick="switchTab('wallet', document.querySelectorAll('.bottom-nav button')[1])">Пополнить баланс</button>
                 </div>
             </div>
 
         </div>
 
+        <!-- BULLDROP BOTTOM NAVIGATION BAR -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="switchTab('cases', this)">
+                <span class="icon">📦</span> Кейсы
+            </button>
+            <button class="nav-item" onclick="switchTab('wallet', this)">
+                <span class="icon">💳</span> Пополнить
+            </button>
+            <button class="nav-item" onclick="switchTab('promo', this)">
+                <span class="icon">🎁</span> Промокод
+            </button>
+            <button class="nav-item" onclick="switchTab('profile', this)">
+                <span class="icon">👤</span> Профиль
+            </button>
+        </nav>
+
         <script>
-            let balance = 11.31;
+            let balance = 0.02;
 
             function switchTab(tabName, btn) {
                 document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-                document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
                 document.getElementById(tabName + '-tab').classList.add('active');
                 if(btn) btn.classList.add('active');
+            }
+
+            async function makePayment() {
+                let amount = parseFloat(document.getElementById('pay-amount').value) || 0;
+                let code = document.getElementById('wallet-promo').value.trim();
+                let msg = document.getElementById('wallet-msg');
+
+                let res = await fetch('/topup', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `amount=${amount}&code=${code}&user_id=1`
+                });
+                let data = await res.json();
+                if(data.success) {
+                    balance = data.new_balance;
+                    document.getElementById('balance').innerText = balance.toFixed(2);
+                    msg.style.color = "#00ffcc";
+                    msg.innerText = "✅ " + data.msg;
+                } else {
+                    msg.style.color = "#ff3366";
+                    msg.innerText = "❌ " + data.msg;
+                }
             }
 
             async function activatePromo() {
@@ -187,9 +256,8 @@ async def index():
             }
 
             async function startRoulette(caseId, price) {
-                if(balance < price) { alert("Balans yetarli emas! Hisobni to'ldiring."); return; }
+                if(balance < price) { alert("Недостаточно средств на балансе!"); return; }
                 
-                // Balansdan yechish
                 balance -= price;
                 document.getElementById('balance').innerText = balance.toFixed(2);
                 
@@ -204,39 +272,57 @@ async def index():
                 track.style.transition = 'none';
                 track.style.transform = 'translateX(0px)';
                 
-                // Ruletka elementlarini generatsiya qilish (soxta elementlar + yutuq o'rtada)
                 let itemsHtml = '';
-                let winningIndex = 35; // O'rtadagi aniq indeks
+                let winningIndex = 35;
                 for(let i = 0; i < 50; i++) {
                     let item = (i === winningIndex) ? data.win_item : data.random_items[i % data.random_items.length];
-                    itemsHtml += `<div class="roulette-item"><span>${item.img}</span><span style="font-size:12px; margin-top:5px;">${item.val} 🪙</span></div>`;
+                    itemsHtml += `<div class="roulette-item"><span>${item.img}</span><span style="font-size:11px; margin-top:4px;">${item.val} 🪙</span></div>`;
                 }
                 track.innerHTML = itemsHtml;
 
-                // Animatsiyani ishga tushirish
                 setTimeout(() => {
                     track.style.transition = 'transform 4s cubic-bezier(0.08, 0.82, 0.17, 1)';
-                    // Har bir element eni 136px (120px + 16px margins), markazga keltirish uchun offset
-                    let targetOffset = (winningIndex * 136) - 250; 
+                    let targetOffset = (winningIndex * 122) - 250; 
                     track.style.transform = `translateX(-${targetOffset}px)`;
                 }, 50);
 
-                // Natijani ko'rsatish
                 setTimeout(() => {
                     balance += data.win_item.val;
                     document.getElementById('balance').innerText = balance.toFixed(2);
-                    document.getElementById('win-result').innerHTML = `🎉 Tabriklaymiz! Yutdingiz: ${data.win_item.name} (${data.win_item.val} 🪙)`;
+                    document.getElementById('win-result').innerHTML = `🎉 Поздравляем! Вы выиграли: ${data.win_item.name} (${data.win_item.val} 🪙)`;
                     document.getElementById('back-btn').style.display = "block";
                 }, 4100);
-            }
-
-            function backToCases() {
-                switchTab('cases', document.querySelectorAll('.nav-btn')[0]);
             }
         </script>
     </body>
     </html>
     """)
+
+@app.post("/topup")
+async def topup(amount: float = Form(...), code: str = Form(""), user_id: int = Form(1)):
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    
+    bonus = 0.0
+    if code:
+        cursor.execute("SELECT reward, is_partner FROM promos WHERE code = ?", (code.upper(),))
+        promo = cursor.fetchone()
+        if promo and promo[1] == 1:
+            bonus = amount * promo[0] # 20% bonus (0.20)
+            cursor.execute("UPDATE users SET partner_earned = partner_earned + ? WHERE partner_code = ?", (bonus, code.upper()))
+
+    total_add = amount + bonus
+    cursor.execute("UPDATE users SET balance = balance + ? WHERE user_id = ?", (total_add, user_id))
+    cursor.execute("SELECT balance FROM users WHERE user_id = ?", (user_id,))
+    new_balance = cursor.fetchone()[0]
+    conn.commit()
+    conn.close()
+    
+    msg = f"Баланс успешно пополнен на {amount} 🪙!"
+    if bonus > 0:
+        msg += f" Промокод активирован: +{bonus:.2f} 🪙 бонус!"
+        
+    return {"success": True, "new_balance": new_balance, "msg": msg}
 
 @app.post("/activate_promo")
 async def activate_promo(code: str = Form(...), user_id: int = Form(1)):
@@ -247,23 +333,23 @@ async def activate_promo(code: str = Form(...), user_id: int = Form(1)):
 
     if not promo:
         conn.close()
-        return {"success": False, "msg": "Promokod topilmadi!"}
+        return {"success": False, "msg": "Промокод не найден!"}
 
     reward, is_partner, max_uses, used_count = promo
 
-    if not is_partner and used_count >= max_uses:
+    if is_partner == 1:
+        conn.close()
+        return {"success": False, "msg": "Этот партнерский промокод используется только при пополнении баланса!"}
+
+    if used_count >= max_uses:
         conn.close()
         return {"success": False, "msg": "Промокод закончился"}
 
-    if not is_partner:
-        cursor.execute("UPDATE promos SET used_count = used_count + 1 WHERE code = ?", (code.upper(),))
-    else:
-        cursor.execute("UPDATE users SET partner_earned = partner_earned + ? WHERE partner_code = ?", (reward, code.upper()))
-
+    cursor.execute("UPDATE promos SET used_count = used_count + 1 WHERE code = ?", (code.upper(),))
     cursor.execute("UPDATE users SET balance = balance + ? WHERE user_id = ?", (reward, user_id))
     conn.commit()
     conn.close()
-    return {"success": True, "reward": reward, "msg": f"Muvaffaqiyatli faollashtirildi! +{reward} 🪙 qo'shildi."}
+    return {"success": True, "reward": reward, "msg": f"Промокод успешно активирован! +{reward} 🪙"}
 
 @app.post("/open/{case_id}")
 async def open_case(case_id: str):
