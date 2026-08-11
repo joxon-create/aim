@@ -6,7 +6,6 @@ import random
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# Xatosiz tuzilgan case ma'lumotlari
 CASES = {
     "case_1": {
         "name": "Starter Case",
