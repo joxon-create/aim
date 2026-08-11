@@ -1,103 +1,66 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import sqlite3
 import random
 
-app = FastAPI(title="Aimdrop API", version="2.5")
-DB_NAME = 'aimdrop.db'
-CARD_NUMBER = "5614686507631458"
+app = FastAPI(title="AimDrop Pro", version="3.0")
+templates = Jinja2Templates(directory="templates")
 
-def get_connection():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
+# Kurs ma'lumotlari: 100 AIMCOIN = 14000 SUM = 60 UC
+EXCHANGE_RATE_UC = 60
+EXCHANGE_RATE_SUM = 14000
 
-class UCRequestModel(BaseModel):
-    telegram_id: int
-    pubg_id: str
-    uc_amount: int
-    price_som: float
+# 10 ta Case va ularning har birida 30 tadan buyum (Foizlar va narxlar bilan)
+# 0.1% - eng qimmat buyumlar, qolganlari foiziga qarab taqsimlanadi
+CASES = {}
+case_prices = [10, 30, 60, 180, 300, 410, 500, 800, 1200, 2000]
 
-class GamePlayModel(BaseModel):
-    telegram_id: int
-    bet_amount: float
-    game_type: str # mines, tower, crush, roulette
-
-@app.get("/")
-def read_root():
-    return {"status": "Aimdrop API serveri ishlamoqda 🚀", "donate_card": CARD_NUMBER}
-
-@app.get("/user/{telegram_id}")
-def get_user_info(telegram_id: int):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE telegram_id = ?", (telegram_id,))
-    user = cursor.fetchone()
-    conn.close()
-    if not user:
-        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
-    return dict(user)
-
-@app.post("/pubg/withdraw")
-def withdraw_uc(data: UCRequestModel):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE telegram_id = ?", (data.telegram_id,))
-    user = cursor.fetchone()
-    if not user:
-        conn.close()
-        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+for i, price in enumerate(case_prices, 1):
+    items = []
+    # 30 ta item yaratish
+    for j in range(1, 31):
+        if j == 1:
+            chance = 0.1  # Eng qimmat buyum ehtimoli
+            val = price * 10
+            name = f"Legendary Skin #{j} (Case {i})"
+        elif j <= 5:
+            chance = 5.0  # O'rtacha qimmat
+            val = price * 2
+            name = f"Epic Item #{j} (Case {i})"
+        else:
+            chance = (100 - 0.1 - (4 * 5.0)) / 25  # Qolgan arzonga foizlar
+            val = max(1, int(price * 0.2))
+            name = f"Common Item #{j} (Case {i})"
+        
+        items.append({"name": name, "chance": round(chance, 2), "val": val})
     
-    if user['balance'] < data.price_som:
-        conn.close()
-        raise HTTPException(status_code=400, detail="Balansda yetarli mablag' yo'q!")
-    
-    try:
-        cursor.execute("UPDATE users SET balance = balance - ? WHERE id = ?", (data.price_som, user['id']))
-        cursor.execute("INSERT INTO uc_requests (user_id, pubg_id, uc_amount, price_som) VALUES (?, ?, ?, ?)",
-                       (user['id'], data.pubg_id, data.uc_amount, data.price_som))
-        conn.commit()
-        conn.close()
-        return {"success": True, "message": "PUBG UC so'rovingiz adminga yuborildi!"}
-    except Exception as e:
-        conn.rollback()
-        conn.close()
-        raise HTTPException(status_code=500, detail=str(e))
+    CASES[f"case_{i}"] = {"price": price, "items": items}
 
-@app.post("/game/play")
-def play_mini_game(data: GamePlayModel):
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE telegram_id = ?", (data.telegram_id,))
-    user = cursor.fetchone()
-    if not user:
-        conn.close()
-        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
-    
-    if user['balance'] < data.bet_amount:
-        conn.close()
-        raise HTTPException(status_code=400, detail="Balans yetarli emas!")
-    
-    won = random.choice([True, False, False])
-    multiplier = 2.0 if data.game_type in ["mines", "tower", "crush"] else 1.5
-    
-    if won:
-        win_amount = data.bet_amount * multiplier
-        cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (win_amount - data.bet_amount, user['id']))
-        conn.commit()
-        conn.close()
-        return {"success": True, "won": True, "win_amount": win_amount, "message": f"Yutdingiz: {win_amount} so'm!"}
-    else:
-        cursor.execute("UPDATE users SET balance = balance - ? WHERE id = ?", (data.bet_amount, user['id']))
-        conn.commit()
-        conn.close()
-        return {"success": True, "won": False, "message": "Yutqazdingiz!"}
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse("index.html", {
+        "request": request, 
+        "cases": CASES, 
+        "uc_rate": EXCHANGE_RATE_UC, 
+        "sum_rate": EXCHANGE_RATE_SUM
+    })
 
-@app.get("/cases")
-def get_cases():
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM cases WHERE is_active = 1")
-    cases = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in cases]
+@app.post("/open-case/{case_key}")
+async def open_case(case_key: str):
+    if case_key not in CASES:
+        raise HTTPException(status_code=404, detail="Case topilmadi")
+    
+    case = CASES[case_key]
+    rand = random.uniform(0, 100)
+    cumulative = 0
+    
+    selected_item = case["items"][-1]
+    for item in case["items"]:
+        cumulative += item["chance"]
+        if rand <= cumulative:
+            selected_item = item
+            break
+            
+    return {"status": "success", "item": selected_item["name"], "value": selected_item["val"]}
