@@ -7,7 +7,6 @@ import uvicorn
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from aiogram import Bot, Dispatcher, types, F
-from aiogram.filters import Command
 
 app = FastAPI()
 
@@ -18,8 +17,13 @@ BOT_TOKEN = "8882251329:AAFNqlxx7bYPVs2bMdfYB80Qol1PWzEUk-Y"
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
+def get_db_connection():
+    conn = sqlite3.connect("aimdrop.db", timeout=30.0)
+    conn.row_factory = sqlite3.Row
+    return conn
+
 def init_db():
-    conn = sqlite3.connect("aimdrop.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -68,11 +72,13 @@ async def catch_card_sms(message: types.Message):
             uc_amount = (sum_amount / 14000) * 60
             aim_add = (uc_amount / 60) * 100
             
-            conn = sqlite3.connect("aimdrop.db")
-            cursor = conn.cursor()
-            cursor.execute("UPDATE users SET aimcoin = aimcoin + ?, total_donated = total_donated + ? WHERE user_id = 1", (aim_add, uc_amount))
-            conn.commit()
-            conn.close()
+            conn = get_db_connection()
+            try:
+                cursor = conn.cursor()
+                cursor.execute("UPDATE users SET aimcoin = aimcoin + ?, total_donated = total_donated + ? WHERE user_id = 1", (aim_add, uc_amount))
+                conn.commit()
+            finally:
+                conn.close()
             
             await message.reply(f"✅ To'lov qabul qilindi!\nSumma: {sum_amount} so'm\nHisobga qo'shildi: {uc_amount:.1f} UC")
 
@@ -569,37 +575,39 @@ async def get_cases():
 
 @app.post("/topup_webhook")
 async def topup_webhook(uc: float = Form(...), user_id: int = Form(1)):
-    conn = sqlite3.connect("aimdrop.db")
-    cursor = conn.cursor()
-    aim_add = (uc / 60) * 100
-    cursor.execute("UPDATE users SET aimcoin = aimcoin + ?, total_donated = total_donated + ? WHERE user_id = ?", (aim_add, uc, user_id))
-    cursor.execute("SELECT aimcoin FROM users WHERE user_id = ?", (user_id,))
-    new_aim = cursor.fetchone()[0]
-    conn.commit()
-    conn.close()
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        aim_add = (uc / 60) * 100
+        cursor.execute("UPDATE users SET aimcoin = aimcoin + ?, total_donated = total_donated + ? WHERE user_id = ?", (aim_add, uc, user_id))
+        cursor.execute("SELECT aimcoin FROM users WHERE user_id = ?", (user_id,))
+        new_aim = cursor.fetchone()[0]
+        conn.commit()
+    finally:
+        conn.close()
     return {"success": True, "new_aim": new_aim, "msg": f"To'lov tasdiqlandi! +{uc} UC qo'shildi."}
 
 @app.post("/activate_promo")
 async def activate_promo(code: str = Form(...), user_id: int = Form(1)):
-    conn = sqlite3.connect("aimdrop.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT reward, max_uses, used_count FROM promos WHERE code = ?", (code.upper(),))
-    promo = cursor.fetchone()
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT reward, max_uses, used_count FROM promos WHERE code = ?", (code.upper(),))
+        promo = cursor.fetchone()
 
-    if not promo:
+        if not promo:
+            return {"success": False, "msg": "Promokod topilmadi!"}
+
+        reward, max_uses, used_count = promo
+        if used_count >= max_uses:
+            return {"success": False, "msg": "Promokod muddati tugagan!"}
+
+        reward_aim = (reward / 60) * 100
+        cursor.execute("UPDATE promos SET used_count = used_count + 1 WHERE code = ?", (code.upper(),))
+        cursor.execute("UPDATE users SET aimcoin = aimcoin + ? WHERE user_id = ?", (reward_aim, user_id))
+        conn.commit()
+    finally:
         conn.close()
-        return {"success": False, "msg": "Promokod topilmadi!"}
-
-    reward, max_uses, used_count = promo
-    if used_count >= max_uses:
-        conn.close()
-        return {"success": False, "msg": "Promokod muddati tugagan!"}
-
-    reward_aim = (reward / 60) * 100
-    cursor.execute("UPDATE promos SET used_count = used_count + 1 WHERE code = ?", (code.upper(),))
-    cursor.execute("UPDATE users SET aimcoin = aimcoin + ? WHERE user_id = ?", (reward_aim, user_id))
-    conn.commit()
-    conn.close()
     return {"success": True, "reward_aim": reward_aim, "msg": f"+{reward} UC berildi!"}
 
 @app.post("/withdraw_uc")
@@ -607,30 +615,29 @@ async def withdraw_uc(pubg_id: str = Form(...), uc: float = Form(...), user_id: 
     if not pubg_id:
         return {"success": False, "msg": "PUBG ID kiriting!"}
     
-    conn = sqlite3.connect("aimdrop.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT total_donated, aimcoin FROM users WHERE user_id = ?", (user_id,))
-    user = cursor.fetchone()
-    
-    if not user:
-        conn.close()
-        return {"success": False, "msg": "Foydalanuvchi topilmadi!"}
-    
-    total_donated, aimcoin = user
-    
-    if total_donated < 60:
-        conn.close()
-        return {"success": False, "msg": "Chiqarish uchun eng kami saytda 60 UC donate qilgan bo'lishi shart!"}
-    
-    aim_required = (uc / 60) * 100
-    if aimcoin < aim_required:
-        conn.close()
-        return {"success": False, "msg": "Hisobda yetarli AimCoin yo'q!"}
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT total_donated, aimcoin FROM users WHERE user_id = ?", (user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
+            return {"success": False, "msg": "Foydalanuvchi topilmadi!"}
+        
+        total_donated, aimcoin = user
+        
+        if total_donated < 60:
+            return {"success": False, "msg": "Chiqarish uchun eng kami saytda 60 UC donate qilgan bo'lishi shart!"}
+        
+        aim_required = (uc / 60) * 100
+        if aimcoin < aim_required:
+            return {"success": False, "msg": "Hisobda yetarli AimCoin yo'q!"}
 
-    cursor.execute("UPDATE users SET aimcoin = aimcoin - ? WHERE user_id = ?", (aim_required, user_id))
-    cursor.execute("INSERT INTO uc_requests (user_id, pubg_id, uc_amount) VALUES (?, ?, ?)", (user_id, pubg_id, uc))
-    conn.commit()
-    conn.close()
+        cursor.execute("UPDATE users SET aimcoin = aimcoin - ? WHERE user_id = ?", (aim_required, user_id))
+        cursor.execute("INSERT INTO uc_requests (user_id, pubg_id, uc_amount) VALUES (?, ?, ?)", (user_id, pubg_id, uc))
+        conn.commit()
+    finally:
+        conn.close()
     return {"success": True, "msg": "UC yechish so'rovi adminga yuborildi!"}
 
 @app.post("/open/{case_id}")
