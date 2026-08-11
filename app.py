@@ -19,7 +19,7 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 def init_db():
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect("aimdrop.db")
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -68,7 +68,7 @@ async def catch_card_sms(message: types.Message):
             uc_amount = (sum_amount / 14000) * 60
             aim_add = (uc_amount / 60) * 100
             
-            conn = sqlite3.connect("database.db")
+            conn = sqlite3.connect("aimdrop.db")
             cursor = conn.cursor()
             cursor.execute("UPDATE users SET aimcoin = aimcoin + ?, total_donated = total_donated + ? WHERE user_id = 1", (aim_add, uc_amount))
             conn.commit()
@@ -149,7 +149,7 @@ async def index():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>BullDrop - PUBG UC</title>
+        <title>AimDrop - PUBG UC</title>
         <style>
             * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
             body {{ background: #0b0f19; color: #fff; min-height: 100vh; display: flex; flex-direction: column; }}
@@ -176,7 +176,7 @@ async def index():
             .panel {{ background: #131b2e; border: 1px solid #1f2b45; padding: 25px; border-radius: 14px; max-width: 450px; margin: 0 auto; }}
             .form-group {{ margin-bottom: 15px; }}
             .form-group label {{ display: block; margin-bottom: 6px; color: #8b9bb4; font-size: 13px; }}
-            .form-group input {{ width: 100%; padding: 11px; background: #0b0f19; border: 1px solid #1f2b45; color: #fff; border-radius: 8px; font-size: 14px; }}
+            .form-group input, .form-group select {{ width: 100%; padding: 11px; background: #0b0f19; border: 1px solid #1f2b45; color: #fff; border-radius: 8px; font-size: 14px; }}
             .btn-submit {{ background: #ff3366; color: #fff; border: none; padding: 11px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; }}
 
             .bottom-nav {{ position: fixed; bottom: 0; left: 0; width: 100%; background: #131b2e; border-top: 1px solid #1f2b45; display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }}
@@ -187,7 +187,7 @@ async def index():
     </head>
     <body>
         <header>
-            <div class="logo">⚡ BULLDROP</div>
+            <div class="logo">🎯 AIMDROP</div>
             <div class="header-right">
                 <select class="lang-select" id="lang-switcher" onchange="changeLanguage(this.value)">
                     <option value="uz">UZ</option>
@@ -200,11 +200,13 @@ async def index():
         </header>
 
         <div class="container">
+            <!-- Cases Tab -->
             <div id="cases-tab" class="tab-content active">
                 <h3 style="margin-bottom: 15px;" id="t-cases-title">PUBG Кейслар</h3>
                 <div class="cases-grid" id="cases-grid"></div>
             </div>
 
+            <!-- Roulette Tab -->
             <div id="roulette-tab" class="tab-content">
                 <div class="roulette-container">
                     <h3 style="margin-bottom: 15px;" id="case-title-run">Keys ochilmoqda...</h3>
@@ -217,6 +219,31 @@ async def index():
                 </div>
             </div>
 
+            <!-- Upgrade Tab -->
+            <div id="upgrade-tab" class="tab-content">
+                <div class="panel" style="max-width: 550px;">
+                    <h3 style="margin-bottom: 15px;" id="t-upgrade-title">⚡ Buyumni Upgrade qilish</h3>
+                    <p style="color: #8b9bb4; font-size: 13px; margin-bottom: 15px;" id="t-upgrade-desc">O'z balansingizdagi AimCoin'ni tanlagan ehtimollik orqali ko'paytiring!</p>
+                    <div class="form-group">
+                        <label id="t-up-amount">Tikiladigan AimCoin:</label>
+                        <input type="number" id="upgrade-bet" value="10" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label id="t-up-chance">Muvaffaqiyat ehtimoli (%):</label>
+                        <select id="upgrade-chance" onchange="calcUpgradeMultiplier()">
+                            <option value="10">10% (X9.5)</option>
+                            <option value="25">25% (X3.8)</option>
+                            <option value="50">50% (X1.9)</option>
+                            <option value="75">75% (X1.25)</option>
+                        </select>
+                    </div>
+                    <p style="color: #ffcc00; margin-bottom: 15px; font-size: 14px;"><span id="t-win-chance-text">Yutuq koeffitsiyenti:</span> <span id="multiplier-display">9.5</span>x</p>
+                    <button class="btn-submit" onclick="startUpgrade()" id="t-up-btn">Upgrade qilish</button>
+                    <p id="upgrade-msg" style="margin-top: 12px; font-size: 13px; text-align: center;"></p>
+                </div>
+            </div>
+
+            <!-- Wallet Tab -->
             <div id="wallet-tab" class="tab-content">
                 <div class="panel">
                     <h3 style="margin-bottom: 15px;" id="t-wallet-title">Balansni to'ldirish (60 UC = 14,000 so'm)</h3>
@@ -235,6 +262,7 @@ async def index():
                 </div>
             </div>
 
+            <!-- Promo Tab -->
             <div id="promo-tab" class="tab-content">
                 <div class="panel">
                     <h3 style="margin-bottom: 15px;" id="t-promo-title">Promokod aktivatsiya</h3>
@@ -246,9 +274,10 @@ async def index():
                 </div>
             </div>
 
+            <!-- Withdraw Tab -->
             <div id="withdraw-tab" class="tab-content">
                 <div class="panel">
-                    <h3 style="margin-bottom: 15px;" id="t-withdraw-title">UC Yechib olish (Chiqarib olish)</h3>
+                    <h3 style="margin-bottom: 15px;" id="t-withdraw-title">UC Yechib olish</h3>
                     <p style="color: #ff3366; font-size: 12px; margin-bottom: 12px;" id="t-withdraw-rule">⚠️ Eslatma: Chiqarish uchun eng kami saytda 60 UC donate qilgan bo'lishi shart!</p>
                     <div class="form-group">
                         <label id="t-pubg-label">Aniq PUBG ID yozing:</label>
@@ -265,7 +294,8 @@ async def index():
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-item active" onclick="switchTab('cases', this)"><span class="icon">📦</span> <span id="nav-cases">Кейсы</span></button>
+            <button class="nav-item active" onclick="switchTab('cases', this)"><span class="icon">📦</span> <span id="nav-cases">Kейслар</span></button>
+            <button class="nav-item" onclick="switchTab('upgrade', this)"><span class="icon">⚡</span> <span id="nav-upgrade">Upgrade</span></button>
             <button class="nav-item" onclick="switchTab('wallet', this)"><span class="icon">💳</span> <span id="nav-wallet">To'ldirish</span></button>
             <button class="nav-item" onclick="switchTab('promo', this)"><span class="icon">🎁</span> <span id="nav-promo">Promo</span></button>
             <button class="nav-item" onclick="switchTab('withdraw', this)"><span class="icon">💸</span> <span id="nav-withdraw">Chiqarish</span></button>
@@ -277,32 +307,45 @@ async def index():
 
             const translations = {{
                 uz: {{
-                    casesTitle: "PUBG Кейслар (20 ta)",
+                    casesTitle: "AimDrop PUBG Кейслар",
                     openBtn: "Ochish",
+                    upgradeTitle: "⚡ Buyumni Upgrade qilish",
+                    upgradeDesc: "O'z balansingizdagi AimCoin'ni tanlagan ehtimollik orqali ko'paytiring!",
+                    upAmount: "Tikiladigan AimCoin:",
+                    upChance: "Muvaffaqiyat ehtimoli (%):",
+                    winChanceText: "Yutuq koeffitsiyenti:",
+                    upBtn: "Upgrade qilish",
                     walletTitle: "Balansni to'ldirish (60 UC = 14,000 so'm)",
                     ucLabel: "UC miqdori (Minimal 60 UC):",
                     sumText: "To'lov summasi:",
-                    payBtn: "To'lov qildim (Webhook)",
+                    payBtn: "To'lov qildim",
                     promoTitle: "Promokod aktivatsiya",
                     promoPlaceholder: "Promokodni kiriting...",
                     promoBtn: "Faollashtirish",
-                    withdrawTitle: "UC Yechib olish (Chiqarish)",
+                    withdrawTitle: "UC Yechib olish",
                     withdrawRule: "⚠️ Eslatma: Chiqarish uchun eng kami saytda 60 UC donate qilgan bo'lishi shart!",
                     pubgLabel: "Aniq PUBG ID yozing:",
                     withdrawAmtLabel: "Yechib olinadigan UC:",
                     withdrawBtn: "UC Yechish so'rovi",
-                    navCases: "Кейслар",
+                    navCases: "Kейслар",
+                    navUpgrade: "Upgrade",
                     navWallet: "To'ldirish",
                     navPromo: "Promo",
                     navWithdraw: "Chiqarish"
                 }},
                 ru: {{
-                    casesTitle: "Кейсы PUBG (20 шт)",
+                    casesTitle: "AimDrop Кейсы PUBG",
                     openBtn: "Открыть",
+                    upgradeTitle: "⚡ Улучшение предметов (Upgrade)",
+                    upgradeDesc: "Увеличивайте свои AimCoin с выбранным шансом успеха!",
+                    upAmount: "Сумма AimCoin для ставки:",
+                    upChance: "Шанс успеха (%):",
+                    winChanceText: "Коэффициент выигрыша:",
+                    upBtn: "Улучшить",
                     walletTitle: "Пополнить баланс (60 UC = 14,000 сум)",
                     ucLabel: "Количество UC (Мин. 60 UC):",
                     sumText: "Сумма к оплате:",
-                    payBtn: "Я оплатил (Webhook)",
+                    payBtn: "Я оплатил",
                     promoTitle: "Активация промокода",
                     promoPlaceholder: "Введите промокод...",
                     promoBtn: "Активировать",
@@ -312,6 +355,7 @@ async def index():
                     withdrawAmtLabel: "Количество UC для вывода:",
                     withdrawBtn: "Запросить вывод UC",
                     navCases: "Кейсы",
+                    navUpgrade: "Upgrade",
                     navWallet: "Пополнить",
                     navPromo: "Промо",
                     navWithdraw: "Вывод"
@@ -322,6 +366,12 @@ async def index():
                 currentLang = lang;
                 let t = translations[lang];
                 document.getElementById('t-cases-title').innerText = t.casesTitle;
+                document.getElementById('t-upgrade-title').innerText = t.upgradeTitle;
+                document.getElementById('t-upgrade-desc').innerText = t.upgradeDesc;
+                document.getElementById('t-up-amount').innerText = t.upAmount;
+                document.getElementById('t-up-chance').innerText = t.upChance;
+                document.getElementById('t-win-chance-text').innerText = t.winChanceText;
+                document.getElementById('t-up-btn').innerText = t.upBtn;
                 document.getElementById('t-wallet-title').innerText = t.walletTitle;
                 document.getElementById('t-uc-label').innerText = t.ucLabel;
                 document.getElementById('t-sum-text').innerText = t.sumText;
@@ -335,6 +385,7 @@ async def index():
                 document.getElementById('t-withdraw-amt-label').innerText = t.withdrawAmtLabel;
                 document.getElementById('t-withdraw-btn').innerText = t.withdrawBtn;
                 document.getElementById('nav-cases').innerText = t.navCases;
+                document.getElementById('nav-upgrade').innerText = t.navUpgrade;
                 document.getElementById('nav-wallet').innerText = t.navWallet;
                 document.getElementById('nav-promo').innerText = t.navPromo;
                 document.getElementById('nav-withdraw').innerText = t.navWithdraw;
@@ -357,6 +408,37 @@ async def index():
                 let uc = parseFloat(document.getElementById('uc-topup').value) || 0;
                 let sum = (uc / 60) * 14000;
                 document.getElementById('sum-calc').innerText = Math.round(sum);
+            }}
+
+            function calcUpgradeMultiplier() {{
+                let chance = parseInt(document.getElementById('upgrade-chance').value);
+                let mult = (95 / chance).toFixed(2);
+                document.getElementById('multiplier-display').innerText = mult;
+            }}
+
+            async function startUpgrade() {{
+                let bet = parseFloat(document.getElementById('upgrade-bet').value) || 0;
+                let chance = parseInt(document.getElementById('upgrade-chance').value);
+                let msg = document.getElementById('upgrade-msg');
+
+                if(bet <= 0) {{ alert("Tikish miqdori noto'g'ri!"); return; }}
+                if(balanceAim < bet) {{ alert("AimCoin yetarli emas!"); return; }}
+
+                balanceAim -= bet;
+                updateUI();
+
+                let rand = Math.random() * 100;
+                if(rand <= chance) {{
+                    let mult = 95 / chance;
+                    let wonAmount = bet * mult;
+                    balanceAim += wonAmount;
+                    updateUI();
+                    msg.style.color = "#00ffcc";
+                    msg.innerText = `🎉 Tabriklaymiz! Upgrade muvaffaqiyatli chiqdi (+${{wonAmount.toFixed(2)}} Aim)!`;
+                }} else {{
+                    msg.style.color = "#ff3366";
+                    msg.innerText = "❌ Afsus, upgrade yutqazdi!";
+                }}
             }}
 
             async function loadCases() {{
@@ -487,7 +569,7 @@ async def get_cases():
 
 @app.post("/topup_webhook")
 async def topup_webhook(uc: float = Form(...), user_id: int = Form(1)):
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect("aimdrop.db")
     cursor = conn.cursor()
     aim_add = (uc / 60) * 100
     cursor.execute("UPDATE users SET aimcoin = aimcoin + ?, total_donated = total_donated + ? WHERE user_id = ?", (aim_add, uc, user_id))
@@ -499,7 +581,7 @@ async def topup_webhook(uc: float = Form(...), user_id: int = Form(1)):
 
 @app.post("/activate_promo")
 async def activate_promo(code: str = Form(...), user_id: int = Form(1)):
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect("aimdrop.db")
     cursor = conn.cursor()
     cursor.execute("SELECT reward, max_uses, used_count FROM promos WHERE code = ?", (code.upper(),))
     promo = cursor.fetchone()
@@ -525,7 +607,7 @@ async def withdraw_uc(pubg_id: str = Form(...), uc: float = Form(...), user_id: 
     if not pubg_id:
         return {"success": False, "msg": "PUBG ID kiriting!"}
     
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect("aimdrop.db")
     cursor = conn.cursor()
     cursor.execute("SELECT total_donated, aimcoin FROM users WHERE user_id = ?", (user_id,))
     user = cursor.fetchone()
