@@ -1,33 +1,32 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>AimDrop Pro - Case Opener</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #0f1923; color: white; font-family: sans-serif; text-align: center; }
-        .case-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 50px; }
-        .case-card { background: #1a2d3d; padding: 20px; border-radius: 10px; cursor: pointer; border: 2px solid #3d5a73; }
-        .case-card:hover { border-color: gold; }
-        #win-msg { color: gold; font-size: 24px; margin-top: 20px; }
+        body { background: #0f1923; color: white; font-family: 'Arial', sans-serif; }
+        .sidebar { width: 200px; height: 100vh; background: #1a2d3d; position: fixed; }
+        .game-btn { display: block; padding: 15px; cursor: pointer; color: white; text-decoration: none; }
+        .game-btn:hover { background: #3d5a73; }
+        .main-content { margin-left: 220px; padding: 20px; }
     </style>
 </head>
 <body>
-    <h1>AIMDROP PRO</h1>
-    <div class="case-grid">
-        {% for id, data in cases.items() %}
-        <div class="case-card" onclick="openCase('{{id}}')">
-            <h3>{{data.name}}</h3>
-            <p>{{data.price}} UC</p>
-        </div>
-        {% endfor %}
+    <div class="sidebar">
+        <h2>AIMDROP</h2>
+        <a class="game-btn" onclick="loadGame('mines')"><i class="fas fa-bomb"></i> Mines</a>
+        <a class="game-btn" onclick="loadGame('tower')"><i class="fas fa-chart-line"></i> Tower</a>
+        <a class="game-btn" onclick="loadGame('crush')"><i class="fas fa-rocket"></i> Crush</a>
     </div>
-    <div id="win-msg"></div>
+    <div class="main-content">
+        <div id="game-area">
+            <h1>O'yinni tanlang</h1>
+        </div>
+    </div>
 
     <script>
-        async function openCase(id) {
-            const res = await fetch(`/open/${id}`, {method: 'POST'});
-            const data = await res.json();
-            document.getElementById('win-msg').innerText = "Siz yutdingiz: " + data.item;
+        async function loadGame(game) {
+            document.getElementById('game-area').innerHTML = `<h2>${game.toUpperCase()} o'yini yuklanmoqda...</h2>`;
+            // Bu yerda o'yin interfeysini yaratamiz
         }
     </script>
 </body>
