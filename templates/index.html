@@ -29,7 +29,7 @@
             const response = await fetch(`/open/${caseId}`, { method: 'POST' });
             const resData = await response.json();
             if(resData.item) {
-                document.getElementById('resultinnerText = `Yutdingiz: ${resData.item} (${resData.price} UC)`;
+                document.getElementById('result').innerText = `Yutdingiz: ${resData.item} (${resData.price} UC)`;
             } else {
                 document.getElementById('result').innerText = "Xatolik yuz berdi!";
             }
