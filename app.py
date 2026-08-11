@@ -6,11 +6,18 @@ import random
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# Oddiy va xatosiz strukturadagi caselar
+# Xatosiz tuzilgan case ma'lumotlari
 CASES = {
-    "case_1": {"name": "Starter Case", "price": 10, "items": [{"name": f"Skin {i}", "chance": 3.3, "val": i*5} for i in range(1, 31)]},
-    "case_2": {"name": "Pro Case", "price": 30, "items": [{"name": f"Skin {i}", "chance": 3.3, "val": i*10} for i in range(1, 31)]},
-    "case_3": {"name": "Master Case", "price": 60, "items": [{"name": f"Skin {i}", "chance": 3.3, "val": i*20} for i in range(1, 31)]}
+    "case_1": {
+        "name": "Starter Case",
+        "price": 10,
+        "items": [{"name": f"Skin Item {i}", "chance": 3.3, "val": i * 5} for i in range(1, 31)]
+    },
+    "case_2": {
+        "name": "Pro Case",
+        "price": 30,
+        "items": [{"name": f"Epic Item {i}", "chance": 3.3, "val": i * 10} for i in range(1, 31)]
+    }
 }
 
 @app.get("/", response_class=HTMLResponse)
