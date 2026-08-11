@@ -5,203 +5,165 @@ import sqlite3
 
 app = FastAPI()
 
-# Bazani ulash va sozlash
 def init_db():
     conn = sqlite3.connect("database.db")
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY,
+            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT,
-            balance INTEGER DEFAULT 500,
+            balance REAL DEFAULT 0.01,
             is_partner INTEGER DEFAULT 0,
-            demo_balance INTEGER DEFAULT 1000
+            partner_code TEXT,
+            partner_earned REAL DEFAULT 0.0
         )
     """)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS promos (
             code TEXT PRIMARY KEY,
-            reward INTEGER,
-            is_partner_code INTEGER DEFAULT 0
+            reward REAL,
+            is_partner INTEGER DEFAULT 0,
+            max_uses INTEGER DEFAULT 10,
+            used_count INTEGER DEFAULT 0
         )
     """)
+    # Standart sinov promokodlari
+    cursor.execute("INSERT OR IGNORE INTO promos (code, reward, is_partner, max_uses) VALUES ('RAVOX', 20.0, 1, 999999)")
+    cursor.execute("INSERT OR IGNORE INTO promos (code, reward, is_partner, max_uses) VALUES ('ULUOFD', 15.0, 0, 5)")
     conn.commit()
     conn.close()
 
 init_db()
 
 CASES = {
-    "starter": {
-        "name": "Starter Case",
-        "price": 10,
+    "oasis": {
+        "name": "Розовый оазис", 
+        "price": 24.03, 
         "items": [
-            {"name": "Common M416", "chance": 60, "val": 5},
-            {"name": "Rare SCAR-L", "chance": 30, "val": 20},
-            {"name": "Epic AKM", "chance": 9, "val": 50},
-            {"name": "Legendary Frost M4", "chance": 1, "val": 150}
-        ]
-    },
-    "pro": {
-        "name": "Pro Case",
-        "price": 30,
-        "items": [
-            {"name": "Rare UMP45", "chance": 50, "val": 15},
-            {"name": "Epic Groza", "chance": 35, "val": 60},
-            {"name": "Legendary M24", "chance": 13, "val": 200},
-            {"name": "Mythic Glacier M4", "chance": 2, "val": 500}
+            {"name": "Kukri Ares", "val": 148.8},
+            {"name": "AWM BOOM", "val": 781.9},
+            {"name": "AKR Dragon", "val": 45.0},
+            {"name": "USP Ghosts", "val": 12.5}
         ]
     }
 }
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    html_content = """
+    return HTMLResponse(content="""
     <!DOCTYPE html>
     <html lang="uz">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AimDrop & Bulldrop Pro - Partner Edition</title>
+        <title>Bulldrop Pro</title>
         <style>
             * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-            body { background: #0b0f19; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-            header { width: 100%; max-width: 1000px; display: flex; justify-content: space-between; align-items: center; background: #131b2e; padding: 15px 25px; border-radius: 12px; border: 1px solid #1f2b45; margin-bottom: 25px; }
-            .logo { font-size: 20px; font-weight: bold; color: #00ffcc; }
-            .nav-menu { display: flex; gap: 10px; flex-wrap: wrap; }
-            .nav-btn { background: #1f2b45; color: #fff; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-            .nav-btn:hover, .nav-btn.active { background: #00ffcc; color: #0b0f19; }
-            .balance-box { background: #ffcc00; color: #000; padding: 8px 16px; border-radius: 20px; font-weight: bold; }
-            
-            .tab-content { display: none; width: 100%; max-width: 1000px; text-align: center; }
-            .tab-content.active { display: block; }
-
-            .grid { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
-            .case-card { background: #131b2e; border: 2px solid #1f2b45; padding: 25px; border-radius: 15px; width: 280px; text-align: center; }
-            .btn-open { background: #00ffcc; color: #0b0f19; border: none; padding: 12px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 15px; }
-            
-            .panel { background: #131b2e; border: 1px solid #1f2b45; padding: 30px; border-radius: 15px; max-width: 500px; margin: 0 auto; text-align: left; }
-            .form-group { margin-bottom: 15px; }
-            .form-group label { display: block; margin-bottom: 5px; color: #aaa; }
+            body { background: #0b0f19; color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+            header { width: 100%; max-width: 1200px; display: flex; justify-content: space-between; align-items: center; background: #131b2e; padding: 15px 30px; border-bottom: 1px solid #1f2b45; }
+            .logo { font-size: 24px; font-weight: bold; color: #ff3366; }
+            .balance-box { background: #1a233a; border: 1px solid #2a3a5a; padding: 8px 16px; border-radius: 20px; font-weight: bold; color: #ffcc00; }
+            .container { width: 100%; max-width: 1200px; padding: 20px; flex: 1; }
+            .panel { background: #131b2e; border: 1px solid #1f2b45; padding: 30px; border-radius: 15px; max-width: 450px; margin: 20px auto; text-align: center; }
+            .form-group { margin-bottom: 15px; text-align: left; }
+            .form-group label { display: block; margin-bottom: 8px; color: #aaa; }
             .form-group input { width: 100%; padding: 12px; background: #0b0f19; border: 1px solid #1f2b45; color: #fff; border-radius: 8px; }
-            .btn-submit { background: #ffcc00; color: #0b0f19; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-            .card-number { background: #0b0f19; padding: 10px; border-radius: 6px; font-family: monospace; color: #ffcc00; font-size: 18px; text-align: center; border: 1px dashed #ffcc00; }
+            .btn-submit { background: #ff3366; color: #fff; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; }
+            .case-card { background: #131b2e; border: 1px solid #1f2b45; padding: 20px; border-radius: 15px; width: 240px; text-align: center; display: inline-block; cursor: pointer; }
+            .btn-open { background: #ff3366; color: #fff; border: none; padding: 10px; width: 100%; border-radius: 8px; font-weight: bold; margin-top: 15px; cursor: pointer; }
         </style>
     </head>
     <body>
-
         <header>
-            <div class="logo">🔥 AIMDROP PARTNER</div>
-            <div class="nav-menu">
-                <button class="nav-btn active" onclick="switchTab('cases', this)">Keyslar</button>
-                <button class="nav-btn" onclick="switchTab('partner', this)" style="background:#ff4df2; color:#fff;">Hamkor Kabineti</button>
-                <button class="nav-btn" onclick="switchTab('promo', this)">Promo Kod</button>
-                <button class="nav-btn" onclick="switchTab('wallet', this)" style="background:#ffcc00; color:#000;">Hisobni To'ldirish</button>
-            </div>
-            <div class="balance-box">Balans: <span id="balance">500</span> UC</div>
+            <div class="logo">⚡ BULLDROP</div>
+            <div class="balance-box">Balans: <span id="balance">11.31</span> 🪙</div>
         </header>
 
-        <!-- CASES -->
-        <div id="cases-tab" class="tab-content active">
-            <h1>OMADLI KEYSLAR</h1>
-            <div class="grid">
-                <div class="case-card">
-                    <h3>Starter Case</h3>
-                    <p>Narxi: 10 UC</p>
-                    <button class="btn-open" onclick="openCase('starter', 10)">OCHISH</button>
-                </div>
-                <div class="case-card">
-                    <h3>Pro Case</h3>
-                    <p>Narxi: 30 UC</p>
-                    <button class="btn-open" onclick="openCase('pro', 30)">OCHISH</button>
-                </div>
+        <div class="container">
+            <h2 style="margin-bottom: 20px;">PUBG M & S20 Keyslar</h2>
+            <div class="case-card" onclick="openCase()">
+                <h3>Розовый оазис</h3>
+                <p style="color:#ffcc00; margin: 10px 0;">24.03 🪙</p>
+                <button class="btn-open">Ochish</button>
             </div>
-            <div id="result-modal" style="margin-top:20px; font-size:20px; color:#00ffcc;"></div>
-        </div>
 
-        <!-- PARTNER CABINET -->
-        <div id="partner-tab" class="tab-content">
-            <div class="panel" style="text-align: center;">
-                <h2>🤝 HAMKOR KABINETI</h2>
-                <p style="color: #aaa; margin-bottom: 15px;">Hamkorlar uchun maxsus test sinovlari uchun demo balans:</p>
-                <h3 style="color: #ff4df2; font-size: 28px; margin-bottom: 20px;"><span id="demo-balance">1000</span> Demo UC</h3>
-                <p style="font-size: 14px; color: #00ffcc;">Hamkor promokodlari orqali foydalanuvchilarga avtomatik 20% bonus taqdim etiladi!</p>
-            </div>
-        </div>
-
-        <!-- PROMO -->
-        <div id="promo-tab" class="tab-content">
-            <div class="panel">
-                <h2>PROMO KOD</h2>
-                <div class="form-group">
-                    <label>Promokodni kiriting (Hamkor kodlari 20% bonus beradi):</label>
-                    <input type="text" id="promo-code" placeholder="Masalan: PARTNER20">
+            <div class="panel" style="margin-top: 40px;">
+                <h2>Promokodni Faollashtirish</h2>
+                <div class="form-group" style="margin-top: 15px;">
+                    <input type="text" id="promo-input" placeholder="Promokodni kiriting...">
                 </div>
-                <button class="btn-submit" onclick="activatePromo()">TASDIQLASH</button>
-                <p id="promo-msg" style="margin-top: 15px; text-align: center;"></p>
-            </div>
-        </div>
-
-        <!-- WALLET -->
-        <div id="wallet-tab" class="tab-content">
-            <div class="panel">
-                <h2>HISOBNI TO'LDIRISH</h2>
-                <div class="form-group">
-                    <label>Karta raqami:</label>
-                    <div class="card-number">5614 6865 0763 1458</div>
-                </div>
-                <div class="form-group">
-                    <label>Summa:</label>
-                    <input type="number" id="pay-amount" placeholder="Summani kiriting">
-                </div>
-                <button class="btn-submit" onclick="alert('So\'rov yuborildi!')">TO'LDIRISH</button>
+                <button class="btn-submit" onclick="activatePromo()">Faollashtirish</button>
+                <p id="promo-msg" style="margin-top: 15px;"></p>
             </div>
         </div>
 
         <script>
-            let userBalance = 500;
-            let demoBalance = 1000;
+            let balance = 11.31;
 
-            function switchTab(tabName, btn) {
-                document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-                document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
-                document.getElementById(tabName + '-tab').classList.add('active');
-                btn.classList.add('active');
-            }
-
-            async function openCase(caseId, price) {
-                if (userBalance < price) { alert("Balans yetarli emas!"); return; }
-                const response = await fetch(`/open/${caseId}`, { method: 'POST' });
-                const resData = await response.json();
-                if(resData.item) {
-                    userBalance = userBalance - price + resData.price;
-                    document.getElementById('balance').innerText = userBalance;
-                    document.getElementById('result-modal').innerText = `🎉 Yutdingiz: ${resData.item} (${resData.price} UC)`;
-                }
-            }
-
-            function activatePromo() {
-                let code = document.getElementById('promo-code').value.trim();
+            async function activatePromo() {
+                let code = document.getElementById('promo-input').value.trim();
                 let msg = document.getElementById('promo-msg');
-                if (code.toUpperCase().includes("PARTNER") || code.toUpperCase() === "20%") {
-                    let bonus = 120; // 20% qo'shilgan holat
-                    userBalance += bonus;
-                    document.getElementById('balance').innerText = userBalance;
-                    msg.style.color = "#ff4df2";
-                    msg.innerText = "🎉 Hamkor promokodi tasdiqlandi! +20% bonus qo'shildi.";
+                let res = await fetch('/activate_promo', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'code=' + code + '&user_id=1'
+                });
+                let data = await res.json();
+                if(data.success) {
+                    balance += data.reward;
+                    document.getElementById('balance').innerText = balance.toFixed(2);
+                    msg.style.color = "#00ffcc";
+                    msg.innerText = "✅ " + data.msg;
                 } else {
-                    msg.style.color = "#ff4d4d";
-                    msg.innerText = "❌ Noto'g'ri promokod!";
+                    msg.style.color = "#ff3366";
+                    msg.innerText = "❌ " + data.msg;
                 }
+            }
+
+            async function openCase() {
+                if(balance < 24.03) { alert("Balans yetarli emas!"); return; }
+                let res = await fetch('/open/oasis', {method: 'POST'});
+                let data = await res.json();
+                balance = balance - 24.03 + data.val;
+                document.getElementById('balance').innerText = balance.toFixed(2);
+                alert("🎉 Tabriklaymiz! Yutdingiz: " + data.name + " (" + data.val + " 🪙)");
             }
         </script>
     </body>
     </html>
-    """
-    return HTMLResponse(content=html_content)
+    """)
+
+@app.post("/activate_promo")
+async def activate_promo(code: str = Form(...), user_id: int = Form(1)):
+    conn = sqlite3.connect("database.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT reward, is_partner, max_uses, used_count FROM promos WHERE code = ?", (code.upper(),))
+    promo = cursor.fetchone()
+
+    if not promo:
+        conn.close()
+        return {"success": False, "msg": "Promokod topilmadi!"}
+
+    reward, is_partner, max_uses, used_count = promo
+
+    if not is_partner and used_count >= max_uses:
+        conn.close()
+        return {"success": False, "msg": "Promokod ishlash muddati tugadi / Промокод закончился"}
+
+    # Limitni yangilash
+    if not is_partner:
+        cursor.execute("UPDATE promos SET used_count = used_count + 1 WHERE code = ?", (code.upper(),))
+    else:
+        # Hamkor promokodidan kelgan foydani hisobga qo'shish
+        cursor.execute("UPDATE users SET partner_earned = partner_earned + ? WHERE partner_code = ?", (reward, code.upper()))
+
+    cursor.execute("UPDATE users SET balance = balance + ? WHERE user_id = ?", (reward, user_id))
+    conn.commit()
+    conn.close()
+    return {"success": True, "reward": reward, "msg": f"Muvaffaqiyatli faollashtirildi! +{reward} 🪙 qo'shildi."}
 
 @app.post("/open/{case_id}")
 async def open_case(case_id: str):
-    case = CASES.get(case_id)
-    items = case["items"]
-    result = random.choices(items, weights=[i['chance'] for i in items], k=1)[0]
-    return {"item": result["name"], "price": result["val"]}
+    case = CASES[case_id]
+    item = random.choice(case["items"])
+    return {"name": item["name"], "val": item["val"]}
