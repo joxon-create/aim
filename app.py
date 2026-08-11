@@ -92,37 +92,62 @@ def startup_event():
     t = threading.Thread(target=run_telegram_bot, daemon=True)
     t.start()
 
+# PUBG Skinlari va ularning sifatli PNG rasmlari
 PUBG_ITEMS_POOL = [
-    {"name": "M416 'Lednik'", "val": 18000, "img": "❄️", "chance": 0.000001},
-    {"name": "M416 'Glacier'", "val": 2800, "img": "🧊", "chance": 0.00005},
-    {"name": "AWM 'The Fool'", "val": 2500, "img": "🤡", "chance": 0.0001},
-    {"name": "Groza 'Jungle'", "val": 1800, "img": "🐍", "chance": 0.0005},
-    {"name": "PP-19 Bizon", "val": 1200, "img": "🔫", "chance": 0.001},
-    {"name": "Vector 'Blood'", "val": 900, "img": "🩸", "chance": 0.005},
-    {"name": "Kar98k 'Sting'", "val": 750, "img": "🎯", "chance": 0.01},
-    {"name": "UMP45 'EMP'", "val": 600, "img": "⚡️", "chance": 0.05},
-    {"name": "SCAR-L 'Toreador'", "val": 500, "img": "🔥", "chance": 0.1},
-    {"name": "Pan 'BFC'", "val": 450, "img": "🍳", "chance": 0.2},
-    {"name": "Helmet Lv.3", "val": 350, "img": "🪖", "chance": 0.5},
-    {"name": "Backpack Lv.3", "val": 300, "img": "🎒", "chance": 0.8},
-    {"name": "M16A4 'Neon'", "val": 250, "img": "🔋", "chance": 1.0},
-    {"name": "Mini14 'Silver'", "val": 220, "img": "🛡", "chance": 1.5},
-    {"name": "SKS 'Metal'", "val": 200, "img": "⚙️", "chance": 2.0},
-    {"name": "Thompson 'Classic'", "val": 180, "img": "📻", "chance": 2.5},
-    {"name": "P92 'Gold'", "val": 150, "img": "🟡", "chance": 3.0},
-    {"name": "Parachute 'Phoenix'", "val": 130, "img": "🪂", "chance": 4.0},
-    {"name": "Grenade 'Finish'", "val": 110, "img": "💣", "chance": 5.0},
-    {"name": "Smoke 'Red'", "val": 90, "img": "🌫", "chance": 6.0},
-    {"name": "Energy Drink", "val": 75, "img": "🥤", "chance": 8.0},
-    {"name": "Painkiller", "val": 60, "img": "💊", "chance": 10.0},
-    {"name": "First Aid", "val": 50, "img": "🩹", "chance": 12.0},
-    {"name": "Cloth Mask", "val": 40, "img": "😷", "chance": 14.0},
-    {"name": "Combat Pants", "val": 30, "img": "👖", "chance": 16.0},
-    {"name": "Sneakers", "val": 25, "img": "👟", "chance": 18.0},
-    {"name": "Glasses", "val": 20, "img": "🕶", "chance": 20.0},
-    {"name": "Cap 'PUBG'", "val": 15, "img": "🧢", "chance": 22.0},
-    {"name": "T-Shirt", "val": 10, "img": "👕", "chance": 25.0},
-    {"name": "Silver Fragment", "val": 5, "img": "🪙", "chance": 30.0},
+    {"name": "M416 'Lednik'", "val": 18000, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 0.000001},
+    {"name": "M416 'Glacier'", "val": 2800, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 0.00005},
+    {"name": "AWM 'The Fool'", "val": 2500, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 0.0001},
+    {"name": "Groza 'Jungle'", "val": 1800, "img": "https://cdn-icons-png.flaticon.com/512/2361/2361878.png", "chance": 0.0005},
+    {"name": "PP-19 Bizon", "val": 1200, "img": "https://cdn-icons-png.flaticon.com/512/2361/2361878.png", "chance": 0.001},
+    {"name": "Vector 'Blood'", "val": 900, "img": "https://cdn-icons-png.flaticon.com/512/2361/2361878.png", "chance": 0.005},
+    {"name": "Kar98k 'Sting'", "val": 750, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 0.01},
+    {"name": "UMP45 'EMP'", "val": 600, "img": "https://cdn-icons-png.flaticon.com/512/2361/2361878.png", "chance": 0.05},
+    {"name": "SCAR-L 'Toreador'", "val": 500, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 0.1},
+    {"name": "Pan 'BFC'", "val": 450, "img": "https://cdn-icons-png.flaticon.com/512/1046/1046857.png", "chance": 0.2},
+    {"name": "Helmet Lv.3", "val": 350, "img": "https://cdn-icons-png.flaticon.com/512/807/807281.png", "chance": 0.5},
+    {"name": "Backpack Lv.3", "val": 300, "img": "https://cdn-icons-png.flaticon.com/512/2821/2821785.png", "chance": 0.8},
+    {"name": "M16A4 'Neon'", "val": 250, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 1.0},
+    {"name": "Mini14 'Silver'", "val": 220, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 1.5},
+    {"name": "SKS 'Metal'", "val": 200, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 2.0},
+    {"name": "Thompson 'Classic'", "val": 180, "img": "https://cdn-icons-png.flaticon.com/512/2361/2361878.png", "chance": 2.5},
+    {"name": "P92 'Gold'", "val": 150, "img": "https://cdn-icons-png.flaticon.com/512/2361/2361878.png", "chance": 3.0},
+    {"name": "Parachute 'Phoenix'", "val": 130, "img": "https://cdn-icons-png.flaticon.com/512/1041/1041883.png", "chance": 4.0},
+    {"name": "Grenade 'Finish'", "val": 110, "img": "https://cdn-icons-png.flaticon.com/512/599/599502.png", "chance": 5.0},
+    {"name": "Smoke 'Red'", "val": 90, "img": "https://cdn-icons-png.flaticon.com/512/599/599502.png", "chance": 6.0},
+    {"name": "Energy Drink", "val": 75, "img": "https://cdn-icons-png.flaticon.com/512/2405/2405479.png", "chance": 8.0},
+    {"name": "Painkiller", "val": 60, "img": "https://cdn-icons-png.flaticon.com/512/2864/2864380.png", "chance": 10.0},
+    {"name": "First Aid", "val": 50, "img": "https://cdn-icons-png.flaticon.com/512/2966/2966327.png", "chance": 12.0},
+    {"name": "Cloth Mask", "val": 40, "img": "https://cdn-icons-png.flaticon.com/512/2276/2276931.png", "chance": 14.0},
+    {"name": "Combat Pants", "val": 30, "img": "https://cdn-icons-png.flaticon.com/512/2550/2550221.png", "chance": 16.0},
+    {"name": "Sneakers", "val": 25, "img": "https://cdn-icons-png.flaticon.com/512/2550/2550221.png", "chance": 18.0},
+    {"name": "Glasses", "val": 20, "img": "https://cdn-icons-png.flaticon.com/512/1785/1785255.png", "chance": 20.0},
+    {"name": "Cap 'PUBG'", "val": 15, "img": "https://cdn-icons-png.flaticon.com/512/807/807281.png", "chance": 22.0},
+    {"name": "T-Shirt", "val": 10, "img": "https://cdn-icons-png.flaticon.com/512/2550/2550221.png", "chance": 25.0},
+    {"name": "Silver Fragment", "val": 5, "img": "https://cdn-icons-png.flaticon.com/512/217/217853.png", "chance": 30.0},
+]
+
+# Keyslar uchun maxsus 20 xil har xil turdagi sandiq rasmlari
+CASE_IMAGES = [
+    "https://cdn-icons-png.flaticon.com/512/3313/3313498.png",
+    "https://cdn-icons-png.flaticon.com/512/3313/3313503.png",
+    "https://cdn-icons-png.flaticon.com/512/3076/3076137.png",
+    "https://cdn-icons-png.flaticon.com/512/2821/2821812.png",
+    "https://cdn-icons-png.flaticon.com/512/2821/2821785.png",
+    "https://cdn-icons-png.flaticon.com/512/616/616490.png",
+    "https://cdn-icons-png.flaticon.com/512/3501/3501241.png",
+    "https://cdn-icons-png.flaticon.com/512/1505/1505471.png",
+    "https://cdn-icons-png.flaticon.com/512/2099/2099085.png",
+    "https://cdn-icons-png.flaticon.com/512/4338/4338782.png",
+    "https://cdn-icons-png.flaticon.com/512/2550/2550221.png",
+    "https://cdn-icons-png.flaticon.com/512/1069/1069158.png",
+    "https://cdn-icons-png.flaticon.com/512/2361/2361878.png",
+    "https://cdn-icons-png.flaticon.com/512/2276/2276931.png",
+    "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+    "https://cdn-icons-png.flaticon.com/512/2972/2972531.png",
+    "https://cdn-icons-png.flaticon.com/512/1164/1164629.png",
+    "https://cdn-icons-png.flaticon.com/512/785/785116.png",
+    "https://cdn-icons-png.flaticon.com/512/1041/1041883.png",
+    "https://cdn-icons-png.flaticon.com/512/3313/3313498.png",
 ]
 
 CASES = {}
@@ -145,7 +170,13 @@ for i, name in enumerate(case_names):
         items.append(copied)
     while len(items) < 30:
         items.append(random.choice(PUBG_ITEMS_POOL))
-    CASES[f"case_{i+1}"] = {"name": name, "price": price, "items": items}
+    
+    CASES[f"case_{i+1}"] = {
+        "name": name, 
+        "price": price, 
+        "img": CASE_IMAGES[i], 
+        "items": items
+    }
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
@@ -170,14 +201,20 @@ async def index():
             .cases-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }}
             .case-card {{ background: #131b2e; border: 1px solid #1f2b45; border-radius: 14px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; }}
             .case-card:hover {{ border-color: #ff3366; transform: translateY(-3px); }}
-            .case-img {{ font-size: 40px; margin: 10px 0; }}
+            .case-img {{ width: 80px; height: 80px; object-fit: contain; margin: 10px auto; display: block; }}
             .btn-open {{ background: #ff3366; color: #fff; border: none; padding: 8px; width: 100%; border-radius: 8px; font-weight: bold; margin-top: 10px; cursor: pointer; }}
             
             .roulette-container {{ background: #131b2e; border: 1px solid #1f2b45; border-radius: 14px; padding: 20px; text-align: center; max-width: 650px; margin: 20px auto; }}
             .roulette-track-window {{ width: 100%; overflow: hidden; position: relative; height: 130px; background: #0b0f19; border-radius: 10px; border: 1px solid #2a3a5a; margin-bottom: 20px; }}
             .roulette-pointer {{ position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #ff3366; transform: translateX(-50%); z-index: 10; }}
             .roulette-track {{ display: flex; position: absolute; left: 0; top: 8px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }}
-            .roulette-item {{ min-width: 110px; height: 110px; background: #1a233a; border: 1px solid #2a3a5a; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 6px; font-weight: bold; }}
+            .roulette-item {{ min-width: 110px; height: 110px; background: #1a233a; border: 1px solid #2a3a5a; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 6px; font-weight: bold; padding: 5px; box-sizing: border-box; }}
+            .roulette-item img {{ width: 50px; height: 50px; object-fit: contain; margin-bottom: 5px; }}
+
+            .case-items-view {{ background: #131b2e; border: 1px solid #1f2b45; border-radius: 14px; padding: 20px; margin-top: 20px; }}
+            .case-items-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 15px; }}
+            .item-card {{ background: #1a233a; border: 1px solid #2a3a5a; border-radius: 8px; padding: 10px; text-align: center; font-size: 11px; }}
+            .item-card img {{ width: 45px; height: 45px; object-fit: contain; margin-bottom: 5px; }}
 
             .panel {{ background: #131b2e; border: 1px solid #1f2b45; padding: 25px; border-radius: 14px; max-width: 450px; margin: 0 auto; }}
             .form-group {{ margin-bottom: 15px; }}
@@ -221,7 +258,14 @@ async def index():
                         <div class="roulette-track" id="track"></div>
                     </div>
                     <div id="win-result" style="font-size: 18px; font-weight: bold; color: #00ffcc; margin-bottom: 15px; min-height: 25px;"></div>
-                    <button class="btn-submit" onclick="switchTab('cases', document.querySelectorAll('.bottom-nav button')[0])" id="back-btn" style="display:none; max-width: 180px; margin: 0 auto;">Keylarga qaytish</button>
+                    
+                    <!-- Case ichidagi 30 ta item ro'yxati -->
+                    <div class="case-items-view" id="case-preview-box" style="display:none;">
+                        <h4 style="color: #ffcc00;">Keys ichidagi buyumlar:</h4>
+                        <div class="case-items-grid" id="case-items-list"></div>
+                    </div>
+
+                    <button class="btn-submit" onclick="switchTab('cases', document.querySelectorAll('.bottom-nav button')[0])" id="back-btn" style="display:none; max-width: 200px; margin: 20px auto 0 auto;">Keylarga qaytish</button>
                 </div>
             </div>
 
@@ -457,7 +501,7 @@ async def index():
                     let aimPrice = (c.price / 60) * 100;
                     html += `
                         <div class="case-card" onclick="startRoulette('${{id}}', ${{aimPrice}}, '${{c.name}}')">
-                            <div class="case-img">📦</div>
+                            <img src="${{c.img}}" class="case-img" alt="${{c.name}}">
                             <h4 style="font-size: 13px;">${{c.name}}</h4>
                             <p style="color:#ffcc00; margin: 8px 0; font-weight: bold;">${{c.price}} UC</p>
                             <button class="btn-open">${{t.openBtn}}</button>
@@ -534,6 +578,7 @@ async def index():
                 document.getElementById('case-title-run').innerText = caseName + " ochilmoqda...";
                 document.getElementById('win-result').innerText = "";
                 document.getElementById('back-btn').style.display = "none";
+                document.getElementById('case-preview-box').style.display = "none";
 
                 let res = await fetch('/open/' + caseId, {{method: 'POST'}});
                 let data = await res.json();
@@ -546,7 +591,7 @@ async def index():
                 let winningIndex = 35;
                 for(let i = 0; i < 50; i++) {{
                     let item = (i === winningIndex) ? data.win_item : data.random_items[i % data.random_items.length];
-                    itemsHtml += `<div class="roulette-item"><span>${{item.img}}</span><span style="font-size:11px; margin-top:4px;">${{item.val}} UC</span></div>`;
+                    itemsHtml += `<div class="roulette-item"><img src="${{item.img}}"><span style="font-size:11px;">${{item.val}} UC</span></div>`;
                 }}
                 track.innerHTML = itemsHtml;
 
@@ -560,8 +605,16 @@ async def index():
                     let wonAim = (data.win_item.val / 60) * 100;
                     balanceAim += wonAim;
                     updateUI();
-                    document.getElementById('win-result').innerHTML = `🎉 Yutib oldingiz: ${{data.win_item.name}} (${{data.win_item.val}} UC)`;
+                    document.getElementById('win-result').innerHTML = `🎉 Yutib oldingiz: <br><img src="${{data.win_item.img}}" style="width:60px; margin-top:5px;"><br>${{data.win_item.name}} (${{data.win_item.val}} UC)`;
                     document.getElementById('back-btn').style.display = "block";
+
+                    // Case ichidagi 30 ta itemlarni pastda rasmlari bilan ko'rsatish
+                    let caseItemsHtml = '';
+                    data.all_case_items.forEach(it => {{
+                        caseItemsHtml += `<div class="item-card"><img src="${{it.img}}"><div>${{it.name}}</div><div style="color:#ffcc00;">${{it.val}} UC</div></div>`;
+                    }});
+                    document.getElementById('case-items-list').innerHTML = caseItemsHtml;
+                    document.getElementById('case-preview-box').style.display = "block";
                 }}, 4100);
             }}
         </script>
@@ -647,8 +700,7 @@ async def open_case(case_id: str):
     chances = [item["chance"] for item in items]
     win_item = random.choices(items, weights=chances, k=1)[0]
     random_items = [random.choice(items) for _ in range(10)]
-    return {"win_item": win_item, "random_items": random_items}
+    return {"win_item": win_item, "random_items": random_items, "all_case_items": items}
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=10000)
-```[cite: 2]
