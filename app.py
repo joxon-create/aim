@@ -3,6 +3,7 @@ import sqlite3
 import re
 import threading
 import asyncio
+import uvicorn
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
 from aiogram import Bot, Dispatcher, types, F
@@ -464,8 +465,8 @@ async def index():
                 setTimeout(() => {{
                     track.style.transition = 'transform 4s cubic-bezier(0.08, 0.82, 0.17, 1)';
                     let targetOffset = (winningIndex * 122) - 250;
-                    track.style.transform = `translateX(-${{targetOffset}px)`;
-                }, 50);
+                    track.style.transform = `translateX(-${{targetOffset}}px)`;
+                }}, 50);
 
                 setTimeout(() => {{
                     let wonAim = (data.win_item.val / 60) * 100;
@@ -473,7 +474,7 @@ async def index():
                     updateUI();
                     document.getElementById('win-result').innerHTML = `🎉 Yutib oldingiz: ${{data.win_item.name}} (${{data.win_item.val}} UC)`;
                     document.getElementById('back-btn').style.display = "block";
-                }, 4100);
+                }}, 4100);
             }}
         </script>
     </body>
@@ -535,7 +536,6 @@ async def withdraw_uc(pubg_id: str = Form(...), uc: float = Form(...), user_id: 
     
     total_donated, aimcoin = user
     
-    # Minimal 60 UC donate qilgan bo'lishi shart tekshiruvi
     if total_donated < 60:
         conn.close()
         return {"success": False, "msg": "Chiqarish uchun eng kami saytda 60 UC donate qilgan bo'lishi shart!"}
@@ -559,3 +559,6 @@ async def open_case(case_id: str):
     win_item = random.choices(items, weights=chances, k=1)[0]
     random_items = [random.choice(items) for _ in range(10)]
     return {"win_item": win_item, "random_items": random_items}
+
+if __name__ == "__main__":
+    uvicorn.run("app:app", host="0.0.0.0", port=10000)
