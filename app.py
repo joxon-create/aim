@@ -6,12 +6,12 @@ import random
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# Case ichidagi 30 ta item (Namuna)
-def generate_items():
-    items = [{"name": f"Item {i}", "chance": 0.1 if i == 1 else 3.4, "val": i * 10} for i in range(1, 31)]
-    return items
-
-CASES = {f"case_{i}": {"price": i*50, "items": generate_items()} for i in range(1, 11)}
+# Oddiy va xatosiz strukturadagi caselar
+CASES = {
+    "case_1": {"name": "Starter Case", "price": 10, "items": [{"name": f"Skin {i}", "chance": 3.3, "val": i*5} for i in range(1, 31)]},
+    "case_2": {"name": "Pro Case", "price": 30, "items": [{"name": f"Skin {i}", "chance": 3.3, "val": i*10} for i in range(1, 31)]},
+    "case_3": {"name": "Master Case", "price": 60, "items": [{"name": f"Skin {i}", "chance": 3.3, "val": i*20} for i in range(1, 31)]}
+}
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -20,7 +20,8 @@ async def index(request: Request):
 @app.post("/open/{case_id}")
 async def open_case(case_id: str):
     case = CASES.get(case_id)
+    if not case:
+        return {"error": "Case topilmadi"}
     items = case["items"]
-    # BullDrop probabillity logic
     result = random.choices(items, weights=[i['chance'] for i in items], k=1)[0]
     return {"item": result["name"], "price": result["val"]}
