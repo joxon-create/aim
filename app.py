@@ -100,26 +100,26 @@ PUBG_ITEMS_POOL = [
     {"name": "PP-19 Bizon", "val": 1200, "img": "🔫", "chance": 0.001},
     {"name": "Vector 'Blood'", "val": 900, "img": "🩸", "chance": 0.005},
     {"name": "Kar98k 'Sting'", "val": 750, "img": "🎯", "chance": 0.01},
-    {"name": "UMP45 'EMP'", "val": 600, "img": "⚡", "chance": 0.05},
+    {"name": "UMP45 'EMP'", "val": 600, "img": "⚡️", "chance": 0.05},
     {"name": "SCAR-L 'Toreador'", "val": 500, "img": "🔥", "chance": 0.1},
     {"name": "Pan 'BFC'", "val": 450, "img": "🍳", "chance": 0.2},
     {"name": "Helmet Lv.3", "val": 350, "img": "🪖", "chance": 0.5},
     {"name": "Backpack Lv.3", "val": 300, "img": "🎒", "chance": 0.8},
     {"name": "M16A4 'Neon'", "val": 250, "img": "🔋", "chance": 1.0},
-    {"name": "Mini14 'Silver'", "val": 220, "img": "🛡️", "chance": 1.5},
+    {"name": "Mini14 'Silver'", "val": 220, "img": "🛡", "chance": 1.5},
     {"name": "SKS 'Metal'", "val": 200, "img": "⚙️", "chance": 2.0},
     {"name": "Thompson 'Classic'", "val": 180, "img": "📻", "chance": 2.5},
     {"name": "P92 'Gold'", "val": 150, "img": "🟡", "chance": 3.0},
     {"name": "Parachute 'Phoenix'", "val": 130, "img": "🪂", "chance": 4.0},
     {"name": "Grenade 'Finish'", "val": 110, "img": "💣", "chance": 5.0},
-    {"name": "Smoke 'Red'", "val": 90, "img": "🌫️", "chance": 6.0},
+    {"name": "Smoke 'Red'", "val": 90, "img": "🌫", "chance": 6.0},
     {"name": "Energy Drink", "val": 75, "img": "🥤", "chance": 8.0},
     {"name": "Painkiller", "val": 60, "img": "💊", "chance": 10.0},
     {"name": "First Aid", "val": 50, "img": "🩹", "chance": 12.0},
     {"name": "Cloth Mask", "val": 40, "img": "😷", "chance": 14.0},
     {"name": "Combat Pants", "val": 30, "img": "👖", "chance": 16.0},
     {"name": "Sneakers", "val": 25, "img": "👟", "chance": 18.0},
-    {"name": "Glasses", "val": 20, "img": "🕶️", "chance": 20.0},
+    {"name": "Glasses", "val": 20, "img": "🕶", "chance": 20.0},
     {"name": "Cap 'PUBG'", "val": 15, "img": "🧢", "chance": 22.0},
     {"name": "T-Shirt", "val": 10, "img": "👕", "chance": 25.0},
     {"name": "Silver Fragment", "val": 5, "img": "🪙", "chance": 30.0},
@@ -228,7 +228,7 @@ async def index():
             <!-- Upgrade Tab -->
             <div id="upgrade-tab" class="tab-content">
                 <div class="panel" style="max-width: 550px;">
-                    <h3 style="margin-bottom: 15px;" id="t-upgrade-title">⚡ Buyumni Upgrade qilish</h3>
+                    <h3 style="margin-bottom: 15px;" id="t-upgrade-title">⚡️ Buyumni Upgrade qilish</h3>
                     <p style="color: #8b9bb4; font-size: 13px; margin-bottom: 15px;" id="t-upgrade-desc">O'z balansingizdagi AimCoin'ni tanlagan ehtimollik orqali ko'paytiring!</p>
                     <div class="form-group">
                         <label id="t-up-amount">Tikiladigan AimCoin:</label>
@@ -301,7 +301,7 @@ async def index():
 
         <nav class="bottom-nav">
             <button class="nav-item active" onclick="switchTab('cases', this)"><span class="icon">📦</span> <span id="nav-cases">Kейслар</span></button>
-            <button class="nav-item" onclick="switchTab('upgrade', this)"><span class="icon">⚡</span> <span id="nav-upgrade">Upgrade</span></button>
+            <button class="nav-item" onclick="switchTab('upgrade', this)"><span class="icon">⚡️</span> <span id="nav-upgrade">Upgrade</span></button>
             <button class="nav-item" onclick="switchTab('wallet', this)"><span class="icon">💳</span> <span id="nav-wallet">To'ldirish</span></button>
             <button class="nav-item" onclick="switchTab('promo', this)"><span class="icon">🎁</span> <span id="nav-promo">Promo</span></button>
             <button class="nav-item" onclick="switchTab('withdraw', this)"><span class="icon">💸</span> <span id="nav-withdraw">Chiqarish</span></button>
@@ -315,7 +315,7 @@ async def index():
                 uz: {{
                     casesTitle: "AimDrop PUBG Кейслар",
                     openBtn: "Ochish",
-                    upgradeTitle: "⚡ Buyumni Upgrade qilish",
+                    upgradeTitle: "⚡️ Buyumni Upgrade qilish",
                     upgradeDesc: "O'z balansingizdagi AimCoin'ni tanlagan ehtimollik orqali ko'paytiring!",
                     upAmount: "Tikiladigan AimCoin:",
                     upChance: "Muvaffaqiyat ehtimoli (%):",
@@ -342,7 +342,7 @@ async def index():
                 ru: {{
                     casesTitle: "AimDrop Кейсы PUBG",
                     openBtn: "Открыть",
-                    upgradeTitle: "⚡ Улучшение предметов (Upgrade)",
+                    upgradeTitle: "⚡️ Улучшение предметов (Upgrade)",
                     upgradeDesc: "Увеличивайте свои AimCoin с выбранным шансом успеха!",
                     upAmount: "Сумма AimCoin для ставки:",
                     upChance: "Шанс успеха (%):",
@@ -651,3 +651,4 @@ async def open_case(case_id: str):
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=10000)
+```[cite: 2]
