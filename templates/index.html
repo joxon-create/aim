@@ -1,30 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html lang="uz">
 <head>
-    <title>AimDrop - Professional</title>
+    <meta charset="UTF-8">
+    <title>AimDrop Pro</title>
     <style>
-        body { background: #0f1923; color: white; font-family: sans-serif; text-align: center; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 20px; }
-        .case { background: #1a2d3d; padding: 20px; border: 2px solid #3d5a73; border-radius: 10px; cursor: pointer; }
-        .case:hover { border-color: gold; }
+        body { background: #0f1923; color: white; font-family: sans-serif; text-align: center; padding: 50px; }
+        .grid { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+        .case-card { background: #1a2d3d; border: 2px solid #3d5a73; padding: 20px; border-radius: 10px; cursor: pointer; width: 200px; }
+        .case-card:hover { border-color: gold; }
+        #result { margin-top: 30px; font-size: 24px; color: gold; }
     </style>
 </head>
 <body>
     <h1>AIMDROP PRO</h1>
     <div class="grid">
-        {% for id, data in cases.items() %}
-        <div class="case" onclick="openCase('{{id}}')">
-            <h3>{{id}}</h3>
-            <p>Narxi: {{data.price}} UC</p>
+        {% for key, data in cases.items() %}
+        <div class="case-card" onclick="openCase('{{ key }}')">
+            <h3>{{ data.name }}</h3>
+            <p>Narxi: {{ data.price }} UC</p>
         </div>
         {% endfor %}
     </div>
-    <h2 id="res"></h2>
+    
+    <div id="result"></div>
+
     <script>
-        async function openCase(id) {
-            const res = await fetch(`/open/${id}`, {method: 'POST'});
-            const data = await res.json();
-            document.getElementById('res').innerText = "Yutdingiz: " + data.item;
+        async function openCase(caseId) {
+            const response = await fetch(`/open/${caseId}`, { method: 'POST' });
+            const resData = await response.json();
+            if(resData.item) {
+                document.getElementById('resultinnerText = `Yutdingiz: ${resData.item} (${resData.price} UC)`;
+            } else {
+                document.getElementById('result').innerText = "Xatolik yuz berdi!";
+            }
         }
     </script>
 </body>
