@@ -50,7 +50,7 @@ CASES = {
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    return HTMLResponse(content=""""
+    return HTMLResponse(content="""
     <!DOCTYPE html>
     <html lang="uz">
     <head>
@@ -61,7 +61,6 @@ async def index():
             * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
             body { background: #0b0f19; color: #fff; min-height: 100vh; display: flex; flex-direction: column; }
             
-            /* Top Header Bar */
             header { display: flex; justify-content: space-between; align-items: center; background: #131b2e; padding: 12px 20px; border-bottom: 1px solid #1f2b45; }
             .logo { font-size: 22px; font-weight: bold; color: #ff3366; display: flex; align-items: center; gap: 5px; }
             .header-right { display: flex; align-items: center; gap: 10px; }
@@ -69,37 +68,31 @@ async def index():
             .balance-container { background: #1a233a; border: 1px solid #2a3a5a; padding: 6px 14px; border-radius: 20px; font-weight: bold; color: #ffcc00; display: flex; align-items: center; gap: 6px; font-size: 15px; }
             .btn-plus { background: #ff3366; color: #fff; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 15px; display: flex; align-items: center; justify-content: center; }
 
-            /* Main Container */
             .container { max-width: 1200px; margin: 0 auto; width: 100%; padding: 20px; flex: 1; padding-bottom: 90px; }
             .tab-content { display: none; }
             .tab-content.active { display: block; }
 
-            /* Cases Grid */
             .cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
             .case-card { background: #131b2e; border: 1px solid #1f2b45; border-radius: 14px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; }
             .case-card:hover { border-color: #ff3366; transform: translateY(-3px); }
             .case-img { font-size: 55px; margin: 10px 0; }
             .btn-open { background: #ff3366; color: #fff; border: none; padding: 10px; width: 100%; border-radius: 8px; font-weight: bold; margin-top: 10px; cursor: pointer; }
 
-            /* Roulette Animation */
             .roulette-container { background: #131b2e; border: 1px solid #1f2b45; border-radius: 14px; padding: 30px; text-align: center; max-width: 650px; margin: 20px auto; }
             .roulette-track-window { width: 100%; overflow: hidden; position: relative; height: 130px; background: #0b0f19; border-radius: 10px; border: 1px solid #2a3a5a; margin-bottom: 20px; }
             .roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #ff3366; transform: translateX(-50%); z-index: 10; }
             .roulette-track { display: flex; position: absolute; left: 0; top: 8px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }
             .roulette-item { min-width: 110px; height: 110px; background: #1a233a; border: 1px solid #2a3a5a; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 6px; font-weight: bold; }
 
-            /* Panel / Forms */
             .panel { background: #131b2e; border: 1px solid #1f2b45; padding: 25px; border-radius: 14px; max-width: 420px; margin: 0 auto; }
             .form-group { margin-bottom: 15px; }
             .form-group label { display: block; margin-bottom: 6px; color: #8b9bb4; font-size: 13px; }
             .form-group input { width: 100%; padding: 11px; background: #0b0f19; border: 1px solid #1f2b45; color: #fff; border-radius: 8px; font-size: 14px; }
             .btn-submit { background: #ff3366; color: #fff; border: none; padding: 11px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
-            /* Profile Tab (Bulldrop Profile Style) */
             .profile-card { background: #131b2e; border: 1px solid #1f2b45; padding: 25px; border-radius: 14px; max-width: 450px; margin: 0 auto; text-align: center; }
             .avatar { font-size: 50px; background: #1a233a; width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto; border: 2px solid #ff3366; }
 
-            /* Bottom Navigation Bar (Bulldrop Style) */
             .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #131b2e; border-top: 1px solid #1f2b45; display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
             .nav-item { background: transparent; border: none; color: #8b9bb4; cursor: pointer; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-weight: 600; transition: 0.2s; }
             .nav-item:hover, .nav-item.active { color: #ff3366; }
@@ -120,7 +113,6 @@ async def index():
 
         <div class="container">
             
-            <!-- CASES TAB -->
             <div id="cases-tab" class="tab-content active">
                 <h3 style="margin-bottom: 15px; font-size: 18px;">Кейсы</h3>
                 <div class="cases-grid">
@@ -133,7 +125,6 @@ async def index():
                 </div>
             </div>
 
-            <!-- ROULETTE ANIMATION TAB -->
             <div id="roulette-tab" class="tab-content">
                 <div class="roulette-container">
                     <h3 style="margin-bottom: 15px;">Кейс открывается...</h3>
@@ -146,7 +137,6 @@ async def index():
                 </div>
             </div>
 
-            <!-- WALLET TAB (20% Hamkor Promokodi faqat shu yerda ishlaydi) -->
             <div id="wallet-tab" class="tab-content">
                 <div class="panel">
                     <h3 style="margin-bottom: 15px;">Пополнить баланс</h3>
@@ -163,7 +153,6 @@ async def index():
                 </div>
             </div>
 
-            <!-- PROMO TAB (Keys promokodlari uchun) -->
             <div id="promo-tab" class="tab-content">
                 <div class="panel">
                     <h3 style="margin-bottom: 15px;">Активация промокода</h3>
@@ -175,11 +164,10 @@ async def index():
                 </div>
             </div>
 
-            <!-- PROFILE TAB (Bulldrop kabinet) -->
             <div id="profile-tab" class="tab-content">
                 <div class="profile-card">
                     <div class="avatar">🦹‍♂️</div>
-                    <h3 style="margin-bottom: 5px;">MUBORAKXON...</h3>
+                    <h3 style="margin-bottom: 5px;">JAXONGIR</h3>
                     <p style="color: #8b9bb4; font-size: 13px; margin-bottom: 20px;">ID: 9758659</p>
                     <button class="btn-submit" style="background: #1a233a; border: 1px solid #2a3a5a;" onclick="switchTab('wallet', document.querySelectorAll('.bottom-nav button')[1])">Пополнить баланс</button>
                 </div>
@@ -187,7 +175,6 @@ async def index():
 
         </div>
 
-        <!-- BULLDROP BOTTOM NAVIGATION BAR -->
         <nav class="bottom-nav">
             <button class="nav-item active" onclick="switchTab('cases', this)">
                 <span class="icon">📦</span> Кейсы
@@ -308,7 +295,7 @@ async def topup(amount: float = Form(...), code: str = Form(""), user_id: int = 
         cursor.execute("SELECT reward, is_partner FROM promos WHERE code = ?", (code.upper(),))
         promo = cursor.fetchone()
         if promo and promo[1] == 1:
-            bonus = amount * promo[0] # 20% bonus (0.20)
+            bonus = amount * promo[0]
             cursor.execute("UPDATE users SET partner_earned = partner_earned + ? WHERE partner_code = ?", (bonus, code.upper()))
 
     total_add = amount + bonus
