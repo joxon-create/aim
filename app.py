@@ -1,12 +1,22 @@
-from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse
 import random
 import sqlite3
+import re
+import threading
+import asyncio
+from fastapi import FastAPI, Request, Form
+from fastapi.responses import HTMLResponse
+from aiogram import Bot, Dispatcher, types, F
+from aiogram.filters import Command
 
 app = FastAPI()
 
 ADMIN_CARD = "5614686507631458"
 CARD_HOLDER = "JAXONGIR"
+
+# Siz taqdim etgan Telegram Bot Tokeni
+BOT_TOKEN = "8882251329:AAFNqlxx7bYPVs2bMdfYB80Qol1PWzEUk-Y"
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher()
 
 def init_db():
     conn = sqlite3.connect("database.db")
@@ -17,7 +27,10 @@ def init_db():
             username TEXT,
             aimcoin REAL DEFAULT 100.0,
             total_donated REAL DEFAULT 0.0,
-            pubg_id TEXT
+            pubg_id TEXT,
+            is_partner INTEGER DEFAULT 0,
+            partner_code TEXT,
+            partner_earned REAL DEFAULT 0.0
         )
     """)
     cursor.execute("""
@@ -34,15 +47,53 @@ def init_db():
             code TEXT PRIMARY KEY,
             reward REAL,
             max_uses INTEGER DEFAULT 10,
-            used_count INTEGER DEFAULT 0
+            used_count INTEGER DEFAULT 0,
+            is_partner INTEGER DEFAULT 0
         )
     """)
+    # Default user_id = 1 yaratib qo'yamiz (xatolik chiqmasligi uchun)
+    cursor.execute("INSERT OR IGNORE INTO users (user_id, username, aimcoin) VALUES (1, 'default_user', 100.0)")
     conn.commit()
     conn.close()
 
 init_db()
 
-# Qimmat narsalarning % (chance) lari juda kamaytirildi (o'yinchilar ko'proq yutqazishi uchun)
+# --- TELEGRAM BOT QISMI (CARD XABARLARINI O'QISH) ---
+@dp.message(F.text)
+async def catch_card_sms(message: types.Message):
+    text = message.text or ""
+    
+    # CardXabarBot'dan kelgan sms xabarlarini tekshirish
+    if "UZS" in text or "so'm" in text:
+        clean_text = text.replace(',', '').replace(' ', '')
+        numbers = re.findall(r'\d+', clean_text)
+        
+        if numbers:
+            sum_amount = float(numbers[0])
+            uc_amount = (sum_amount / 14000) * 60
+            aim_add = (uc_amount / 60) * 100
+            
+            conn = sqlite3.connect("database.db")
+            cursor = conn.cursor()
+            cursor.execute("UPDATE users SET aimcoin = aimcoin + ?, total_donated = total_donated + ? WHERE user_id = 1", (aim_add, uc_amount))
+            conn.commit()
+            conn.close()
+            
+            await message.reply(f"✅ **To'lov muvaffaqiyatli qabul qilindi!**\n\nSumma: {sum_amount} so'm\nHisobga qo'shildi: {uc_amount:.1f} UC ({aim_add} AimCoin)")
+
+def run_telegram_bot():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(dp.start_polling(bot))
+
+# FastAPI ishga tushganda Telegram botni ham fon rejimida yonishini ta'minlaymiz
+@app.on_event("startup")
+def startup_event():
+    t = threading.Thread(target=run_telegram_bot, daemon=True)
+    t.start()
+
+
+# Qimmat narsalarning % (chance) lari
 PUBG_ITEMS_POOL = [
     {"name": "M416 'Lednik' (Lv.1)", "val": 18000, "img": "❄️", "chance": 0.000001},
     {"name": "M416 'Glacier'", "val": 2800, "img": "🧊", "chance": 0.00005},
