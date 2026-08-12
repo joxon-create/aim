@@ -1,22 +1,24 @@
 import random
 import sqlite3
-import re
 import threading
 import asyncio
 import uvicorn
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from aiogram import Bot, Dispatcher, types, F
+from aiogram.filters import Command
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 app = FastAPI()
 
-ADMIN_CARD = "5614686507631458"
-CARD_HOLDER = "AZIZA BOYTEMIROVA"
+# --- SOZLAMALAR ---
+BOT_TOKEN = "8253855521:AAExh7BzHiyQnmrubfod3fcjK3tgQ-iaDoM"
+SUPER_ADMIN_ID = 8692517241  # Katta admin ID raqami
 
-BOT_TOKEN = "8882251329:AAFNqlxx7bYPVs2bMdfYB80Qol1PWzEUk-Y"
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
+# --- BAZANI YARATISH ---
 def get_db_connection():
     conn = sqlite3.connect("aimdrop.db", timeout=30.0)
     conn.row_factory = sqlite3.Row
@@ -27,14 +29,29 @@ def init_db():
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER PRIMARY KEY,
             username TEXT,
             aimcoin REAL DEFAULT 100.0,
             total_donated REAL DEFAULT 0.0,
             pubg_id TEXT,
-            is_partner INTEGER DEFAULT 0,
             partner_code TEXT,
-            partner_earned REAL DEFAULT 0.0
+            partner_earned REAL DEFAULT 0.0,
+            referred_count INTEGER DEFAULT 0
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS admins (
+            admin_id INTEGER PRIMARY KEY
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS promos (
+            code TEXT PRIMARY KEY,
+            reward REAL,
+            max_uses INTEGER DEFAULT 10,
+            used_count INTEGER DEFAULT 0,
+            owner_id INTEGER DEFAULT 0,
+            earned_from_promo REAL DEFAULT 0.0
         )
     """)
     cursor.execute("""
@@ -47,40 +64,135 @@ def init_db():
         )
     """)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS promos (
-            code TEXT PRIMARY KEY,
-            reward REAL,
-            max_uses INTEGER DEFAULT 10,
-            used_count INTEGER DEFAULT 0,
-            is_partner INTEGER DEFAULT 0
+        CREATE TABLE IF NOT EXISTS demo_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            amount REAL,
+            status TEXT DEFAULT 'pending'
         )
     """)
-    cursor.execute("INSERT OR IGNORE INTO users (user_id, username, aimcoin) VALUES (1, 'default_user', 100.0)")
+    cursor.execute("INSERT OR IGNORE INTO admins (admin_id) VALUES (?)", (SUPER_ADMIN_ID,))
     conn.commit()
     conn.close()
 
 init_db()
 
-@dp.message(F.text)
-async def catch_card_sms(message: types.Message):
-    text = message.text or ""
-    if "UZS" in text or "so'm" in text:
-        clean_text = text.replace(',', '').replace(' ', '')
-        numbers = re.findall(r'\d+', clean_text)
-        if numbers:
-            sum_amount = float(numbers[0])
-            uc_amount = (sum_amount / 14000) * 60
-            aim_add = (uc_amount / 60) * 100
-            
-            conn = get_db_connection()
-            try:
-                cursor = conn.cursor()
-                cursor.execute("UPDATE users SET aimcoin = aimcoin + ?, total_donated = total_donated + ? WHERE user_id = 1", (aim_add, uc_amount))
-                conn.commit()
-            finally:
-                conn.close()
-            
-            await message.reply(f"✅ To'lov qabul qilindi!\nSumma: {sum_amount} so'm\nHisobga qo'shildi: {uc_amount:.1f} UC")
+def is_admin(user_id: int) -> bool:
+    if user_id == SUPER_ADMIN_ID:
+        return True
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM admins WHERE admin_id = ?", (user_id,))
+    res = cursor.fetchone()
+    conn.close()
+    return res is not None
+
+# --- TELEGRAM BOT QISMI (ADMIN VA USER) ---
+@dp.message(Command("start"))
+async def cmd_start(message: types.Message):
+    user_id = message.from_user.id
+    username = message.from_user.username or "NoUsername"
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR IGNORE INTO users (user_id, username, aimcoin) VALUES (?, ?, 100.0)", (user_id, username))
+    conn.commit()
+    conn.close()
+
+    admin_text = ""
+    if is_admin(user_id):
+        admin_text = "\n\n🛠 **Admin Buyruqlari:**\n/addpromo [kod] [uc] [limit] - Promokod qo'shish\n/addadmin [user_id] - Admin qo'shish\n/stats - Statistika"
+
+    await message.answer(
+        f"🔥 **BULLDROP / AIMDROP** rasmiy botiga xush kelibsiz!\n"
+        f"Sizning Telegram ID raqamingiz: `{user_id}`{admin_text}",
+        parse_mode="Markdown"
+    )
+
+@dp.message(Command("addpromo"))
+async def cmd_addpromo(message: types.Message):
+    if not is_admin(message.from_user.id):
+        await message.answer("❌ Siz admin emassiz!")
+        return
+    args = message.text.split()
+    if len(args) < 4:
+        await message.answer("⚠️ Format: `/addpromo [KOD] [UC] [LIMIT]`", parse_mode="Markdown")
+        return
+    code, reward, limit = args[1].upper(), float(args[2]), int(args[3])
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR REPLACE INTO promos (code, reward, max_uses, used_count) VALUES (?, ?, ?, 0)", (code, reward, limit))
+    conn.commit()
+    conn.close()
+    await message.answer(f"✅ Promokod yaratildi: `{code}` ({reward} UC)", parse_mode="Markdown")
+
+@dp.message(Command("addadmin"))
+async def cmd_addadmin(message: types.Message):
+    if message.from_user.id != SUPER_ADMIN_ID:
+        await message.answer("❌ Faqat Katta Admin qo'shishi mumkin!")
+        return
+    args = message.text.split()
+    if len(args) < 2:
+        return
+    new_admin = int(args[1])
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR IGNORE INTO admins (admin_id) VALUES (?)", (new_admin,))
+    conn.commit()
+    conn.close()
+    await message.answer(f"✅ {new_admin} admin qilindi.")
+
+@dp.message(Command("stats"))
+async def cmd_stats(message: types.Message):
+    if not is_admin(message.from_user.id):
+        return
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users")
+    u_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM demo_requests WHERE status='pending'")
+    d_count = cursor.fetchone()[0]
+    conn.close()
+    await message.answer(f"📊 **Statistika:**\n👥 Foydalanuvchilar: {u_count}\n⏳ Kutilayotgan demo so'rovlar: {d_count}")
+
+# Demo balansni tasdiqlash handlerlari
+@dp.callback_query(F.data.startswith("approve_demo_"))
+async def approve_demo(callback: types.CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Ruxsat yo'q!", show_alert=True)
+        return
+    req_id = int(callback.data.split("_")[2])
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT user_id, amount, status FROM demo_requests WHERE id = ?", (req_id,))
+    req = cursor.fetchone()
+    if not req or req["status"] != "pending":
+        await callback.answer("So'rov allaqachon bajarilgan!", show_alert=True)
+        conn.close()
+        return
+    
+    user_id, amount = req["user_id"], req["amount"]
+    aim_add = (amount / 60) * 100
+    cursor.execute("UPDATE users SET aimcoin = aimcoin + ? WHERE user_id = ?", (aim_add, user_id))
+    cursor.execute("UPDATE demo_requests SET status = 'approved' WHERE id = ?", (req_id,))
+    conn.commit()
+    conn.close()
+
+    await callback.message.edit_text(f"✅ Demo so'rov (#{req_id}) tasdiqlandi! Foydalanuvchiga {amount} UC ({aim_add} Aim) qo'shildi.")
+    await bot.send_message(user_id, f"🎉 Tabriklaymiz! Admin sizning demo balans so'rovingizni tasdiqladi: +{amount} UC qo'shildi.")
+
+@dp.callback_query(F.data.startswith("reject_demo_"))
+async def reject_demo(callback: types.CallbackQuery):
+    if not is_admin(callback.from_user.id):
+        await callback.answer("Ruxsat yo'q!", show_alert=True)
+        return
+    req_id = int(callback.data.split("_")[2])
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE demo_requests SET status = 'rejected' WHERE id = ?", (req_id,))
+    conn.commit()
+    conn.close()
+    await callback.message.edit_text(f"❌ Demo so'rov (#{req_id}) rad etildi.")
 
 def run_telegram_bot():
     loop = asyncio.new_event_loop()
@@ -92,485 +204,248 @@ def startup_event():
     t = threading.Thread(target=run_telegram_bot, daemon=True)
     t.start()
 
-# PUBG Skinlari va ularning sifatli PNG rasmlari
+# --- PUBG ITEMS VA CASES POOL ---
 PUBG_ITEMS_POOL = [
     {"name": "M416 'Lednik'", "val": 18000, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 0.000001},
     {"name": "M416 'Glacier'", "val": 2800, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 0.00005},
     {"name": "AWM 'The Fool'", "val": 2500, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 0.0001},
-    {"name": "Groza 'Jungle'", "val": 1800, "img": "https://cdn-icons-png.flaticon.com/512/2361/2361878.png", "chance": 0.0005},
-    {"name": "PP-19 Bizon", "val": 1200, "img": "https://cdn-icons-png.flaticon.com/512/2361/2361878.png", "chance": 0.001},
-    {"name": "Vector 'Blood'", "val": 900, "img": "https://cdn-icons-png.flaticon.com/512/2361/2361878.png", "chance": 0.005},
-    {"name": "Kar98k 'Sting'", "val": 750, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 0.01},
-    {"name": "UMP45 'EMP'", "val": 600, "img": "https://cdn-icons-png.flaticon.com/512/2361/2361878.png", "chance": 0.05},
-    {"name": "SCAR-L 'Toreador'", "val": 500, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 0.1},
     {"name": "Pan 'BFC'", "val": 450, "img": "https://cdn-icons-png.flaticon.com/512/1046/1046857.png", "chance": 0.2},
     {"name": "Helmet Lv.3", "val": 350, "img": "https://cdn-icons-png.flaticon.com/512/807/807281.png", "chance": 0.5},
-    {"name": "Backpack Lv.3", "val": 300, "img": "https://cdn-icons-png.flaticon.com/512/2821/2821785.png", "chance": 0.8},
-    {"name": "M16A4 'Neon'", "val": 250, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 1.0},
-    {"name": "Mini14 'Silver'", "val": 220, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 1.5},
-    {"name": "SKS 'Metal'", "val": 200, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 2.0},
-    {"name": "Thompson 'Classic'", "val": 180, "img": "https://cdn-icons-png.flaticon.com/512/2361/2361878.png", "chance": 2.5},
-    {"name": "P92 'Gold'", "val": 150, "img": "https://cdn-icons-png.flaticon.com/512/2361/2361878.png", "chance": 3.0},
-    {"name": "Parachute 'Phoenix'", "val": 130, "img": "https://cdn-icons-png.flaticon.com/512/1041/1041883.png", "chance": 4.0},
-    {"name": "Grenade 'Finish'", "val": 110, "img": "https://cdn-icons-png.flaticon.com/512/599/599502.png", "chance": 5.0},
-    {"name": "Smoke 'Red'", "val": 90, "img": "https://cdn-icons-png.flaticon.com/512/599/599502.png", "chance": 6.0},
-    {"name": "Energy Drink", "val": 75, "img": "https://cdn-icons-png.flaticon.com/512/2405/2405479.png", "chance": 8.0},
-    {"name": "Painkiller", "val": 60, "img": "https://cdn-icons-png.flaticon.com/512/2864/2864380.png", "chance": 10.0},
-    {"name": "First Aid", "val": 50, "img": "https://cdn-icons-png.flaticon.com/512/2966/2966327.png", "chance": 12.0},
-    {"name": "Cloth Mask", "val": 40, "img": "https://cdn-icons-png.flaticon.com/512/2276/2276931.png", "chance": 14.0},
-    {"name": "Combat Pants", "val": 30, "img": "https://cdn-icons-png.flaticon.com/512/2550/2550221.png", "chance": 16.0},
-    {"name": "Sneakers", "val": 25, "img": "https://cdn-icons-png.flaticon.com/512/2550/2550221.png", "chance": 18.0},
-    {"name": "Glasses", "val": 20, "img": "https://cdn-icons-png.flaticon.com/512/1785/1785255.png", "chance": 20.0},
-    {"name": "Cap 'PUBG'", "val": 15, "img": "https://cdn-icons-png.flaticon.com/512/807/807281.png", "chance": 22.0},
-    {"name": "T-Shirt", "val": 10, "img": "https://cdn-icons-png.flaticon.com/512/2550/2550221.png", "chance": 25.0},
     {"name": "Silver Fragment", "val": 5, "img": "https://cdn-icons-png.flaticon.com/512/217/217853.png", "chance": 30.0},
 ]
 
-# Keyslar uchun maxsus 20 xil har xil turdagi sandiq rasmlari
-CASE_IMAGES = [
-    "https://cdn-icons-png.flaticon.com/512/3313/3313498.png",
-    "https://cdn-icons-png.flaticon.com/512/3313/3313503.png",
-    "https://cdn-icons-png.flaticon.com/512/3076/3076137.png",
-    "https://cdn-icons-png.flaticon.com/512/2821/2821812.png",
-    "https://cdn-icons-png.flaticon.com/512/2821/2821785.png",
-    "https://cdn-icons-png.flaticon.com/512/616/616490.png",
-    "https://cdn-icons-png.flaticon.com/512/3501/3501241.png",
-    "https://cdn-icons-png.flaticon.com/512/1505/1505471.png",
-    "https://cdn-icons-png.flaticon.com/512/2099/2099085.png",
-    "https://cdn-icons-png.flaticon.com/512/4338/4338782.png",
-    "https://cdn-icons-png.flaticon.com/512/2550/2550221.png",
-    "https://cdn-icons-png.flaticon.com/512/1069/1069158.png",
-    "https://cdn-icons-png.flaticon.com/512/2361/2361878.png",
-    "https://cdn-icons-png.flaticon.com/512/2276/2276931.png",
-    "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
-    "https://cdn-icons-png.flaticon.com/512/2972/2972531.png",
-    "https://cdn-icons-png.flaticon.com/512/1164/1164629.png",
-    "https://cdn-icons-png.flaticon.com/512/785/785116.png",
-    "https://cdn-icons-png.flaticon.com/512/1041/1041883.png",
-    "https://cdn-icons-png.flaticon.com/512/3313/3313498.png",
-]
-
+CASE_IMAGES = ["https://cdn-icons-png.flaticon.com/512/3313/3313498.png"] * 20
 CASES = {}
-case_names = [
-    "Soldier Crate", "Premium Crate", "Classic Crate", "Custom Crate", "Royal Pass Box",
-    "Mythic Forge", "Cyber Punk", "Desert Storm", "Neon City", "Arctic Wolf",
-    "Golden Dragon", "Shadow Ninja", "Titanium Box", "Blood Moon", "Pharaoh Vault",
-    "Ocean Treasure", "Galaxy Drop", "Inferno Case", "Thunder Strike", "Rosovy Oazis"
-]
-
+case_names = [f"Case #{i+1}" for i in range(20)]
 for i, name in enumerate(case_names):
     price = 10 if i == 0 else (300 if i == 19 else round(10 + (290 / 18) * i, 1))
-    items = []
-    for item in PUBG_ITEMS_POOL:
-        copied = item.copy()
-        if i == 19 and copied["name"] == "M416 'Lednik'":
-            copied["val"] = price * 30
-        else:
-            copied["val"] = round(price * random.uniform(0.2, 2.0), 1)
-        items.append(copied)
-    while len(items) < 30:
-        items.append(random.choice(PUBG_ITEMS_POOL))
-    
-    CASES[f"case_{i+1}"] = {
-        "name": name, 
-        "price": price, 
-        "img": CASE_IMAGES[i], 
-        "items": items
-    }
+    items = [dict(item, val=round(price * random.uniform(0.2, 2.0), 1)) for item in PUBG_ITEMS_POOL]
+    while len(items) < 20: items.append(random.choice(PUBG_ITEMS_POOL))
+    CASES[f"case_{i+1}"] = {"name": name, "price": price, "img": CASE_IMAGES[i], "items": items}
 
+# --- WEB APP FRONTEND & BACKEND ---
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    return HTMLResponse(content=f"""
+    return HTMLResponse(content="""
     <!DOCTYPE html>
     <html lang="uz">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AimDrop - PUBG UC</title>
+        <title>Bulldrop / AimDrop</title>
+        <script src="https://telegram.org/js/telegram-web-app.js"></script>
         <style>
-            * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
-            body {{ background: #0b0f19; color: #fff; min-height: 100vh; display: flex; flex-direction: column; }}
-            header {{ display: flex; justify-content: space-between; align-items: center; background: #131b2e; padding: 12px 20px; border-bottom: 1px solid #1f2b45; }}
-            .logo {{ font-size: 22px; font-weight: bold; color: #ff3366; }}
-            .header-right {{ display: flex; align-items: center; gap: 10px; }}
-            .lang-select {{ background: #1a233a; color: #fff; border: 1px solid #2a3a5a; padding: 5px 10px; border-radius: 12px; cursor: pointer; font-size: 13px; }}
-            .balance-container {{ background: #1a233a; border: 1px solid #2a3a5a; padding: 6px 14px; border-radius: 20px; font-weight: bold; color: #ffcc00; font-size: 14px; }}
-            .container {{ max-width: 1200px; margin: 0 auto; width: 100%; padding: 20px; flex: 1; padding-bottom: 90px; }}
-            .tab-content {{ display: none; }}
-            .tab-content.active {{ display: block; }}
-            .cases-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }}
-            .case-card {{ background: #131b2e; border: 1px solid #1f2b45; border-radius: 14px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; }}
-            .case-card:hover {{ border-color: #ff3366; transform: translateY(-3px); }}
-            .case-img {{ width: 80px; height: 80px; object-fit: contain; margin: 10px auto; display: block; }}
-            .btn-open {{ background: #ff3366; color: #fff; border: none; padding: 8px; width: 100%; border-radius: 8px; font-weight: bold; margin-top: 10px; cursor: pointer; }}
+            * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+            body { background: #0b0f19; color: #fff; min-height: 100vh; display: flex; flex-direction: column; }
+            header { display: flex; justify-content: space-between; align-items: center; background: #131b2e; padding: 12px 20px; border-bottom: 1px solid #1f2b45; }
+            .logo { font-size: 20px; font-weight: bold; color: #f39c12; }
+            .balance-container { background: #1a233a; border: 1px solid #f39c12; padding: 5px 12px; border-radius: 20px; font-weight: bold; color: #f39c12; font-size: 13px; }
+            .container { max-width: 1200px; margin: 0 auto; width: 100%; padding: 15px; flex: 1; padding-bottom: 90px; }
+            .tab-content { display: none; }
+            .tab-content.active { display: block; }
+            .cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+            .case-card { background: #131b2e; border: 1px solid #1f2b45; border-radius: 12px; padding: 12px; text-align: center; cursor: pointer; }
+            .case-img { width: 70px; height: 70px; object-fit: contain; margin: 8px auto; display: block; }
+            .btn-open { background: linear-gradient(135deg, #f39c12, #d35400); color: #fff; border: none; padding: 7px; width: 100%; border-radius: 6px; font-weight: bold; margin-top: 8px; cursor: pointer; }
             
-            .roulette-container {{ background: #131b2e; border: 1px solid #1f2b45; border-radius: 14px; padding: 20px; text-align: center; max-width: 650px; margin: 20px auto; }}
-            .roulette-track-window {{ width: 100%; overflow: hidden; position: relative; height: 130px; background: #0b0f19; border-radius: 10px; border: 1px solid #2a3a5a; margin-bottom: 20px; }}
-            .roulette-pointer {{ position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #ff3366; transform: translateX(-50%); z-index: 10; }}
-            .roulette-track {{ display: flex; position: absolute; left: 0; top: 8px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }}
-            .roulette-item {{ min-width: 110px; height: 110px; background: #1a233a; border: 1px solid #2a3a5a; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 6px; font-weight: bold; padding: 5px; box-sizing: border-box; }}
-            .roulette-item img {{ width: 50px; height: 50px; object-fit: contain; margin-bottom: 5px; }}
+            .roulette-container { background: #131b2e; border: 1px solid #1f2b45; border-radius: 12px; padding: 15px; text-align: center; max-width: 600px; margin: 15px auto; }
+            .roulette-track-window { width: 100%; overflow: hidden; position: relative; height: 120px; background: #0b0f19; border-radius: 8px; border: 1px solid #2a3a5a; margin-bottom: 15px; }
+            .roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #f39c12; transform: translateX(-50%); z-index: 10; }
+            .roulette-track { display: flex; position: absolute; left: 0; top: 6px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }
+            .roulette-item { min-width: 100px; height: 105px; background: #1a233a; border: 1px solid #2a3a5a; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 5px; font-size: 11px; padding: 4px; }
+            .roulette-item img { width: 45px; height: 45px; object-fit: contain; margin-bottom: 4px; }
 
-            .case-items-view {{ background: #131b2e; border: 1px solid #1f2b45; border-radius: 14px; padding: 20px; margin-top: 20px; }}
-            .case-items-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 15px; }}
-            .item-card {{ background: #1a233a; border: 1px solid #2a3a5a; border-radius: 8px; padding: 10px; text-align: center; font-size: 11px; }}
-            .item-card img {{ width: 45px; height: 45px; object-fit: contain; margin-bottom: 5px; }}
+            .panel { background: #131b2e; border: 1px solid #1f2b45; padding: 20px; border-radius: 12px; max-width: 420px; margin: 0 auto; }
+            .form-group { margin-bottom: 12px; }
+            .form-group label { display: block; margin-bottom: 5px; color: #8b9bb4; font-size: 12px; }
+            .form-group input { width: 100%; padding: 10px; background: #0b0f19; border: 1px solid #1f2b45; color: #fff; border-radius: 6px; font-size: 14px; text-align: center; }
+            .btn-submit { background: linear-gradient(135deg, #f39c12, #d35400); color: #fff; border: none; padding: 10px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-            .panel {{ background: #131b2e; border: 1px solid #1f2b45; padding: 25px; border-radius: 14px; max-width: 450px; margin: 0 auto; }}
-            .form-group {{ margin-bottom: 15px; }}
-            .form-group label {{ display: block; margin-bottom: 6px; color: #8b9bb4; font-size: 13px; }}
-            .form-group input, .form-group select {{ width: 100%; padding: 11px; background: #0b0f19; border: 1px solid #1f2b45; color: #fff; border-radius: 8px; font-size: 14px; }}
-            .btn-submit {{ background: #ff3366; color: #fff; border: none; padding: 11px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; }}
-
-            .bottom-nav {{ position: fixed; bottom: 0; left: 0; width: 100%; background: #131b2e; border-top: 1px solid #1f2b45; display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }}
-            .nav-item {{ background: transparent; border: none; color: #8b9bb4; cursor: pointer; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-weight: 600; }}
-            .nav-item.active {{ color: #ff3366; }}
-            .nav-item span.icon {{ font-size: 20px; }}
+            .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #131b2e; border-top: 1px solid #1f2b45; display: flex; justify-content: space-around; padding: 8px 0; z-index: 100; }
+            .nav-item { background: transparent; border: none; color: #8b9bb4; cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 600; }
+            .nav-item.active { color: #f39c12; }
+            .nav-item span.icon { font-size: 18px; }
         </style>
     </head>
     <body>
         <header>
-            <div class="logo">🎯 AIMDROP</div>
-            <div class="header-right">
-                <select class="lang-select" id="lang-switcher" onchange="changeLanguage(this.value)">
-                    <option value="uz">UZ</option>
-                    <option value="ru">RU</option>
-                </select>
-                <div class="balance-container">
-                    <span id="balance">100.00</span> Aim (<span id="uc-balance">60</span> UC)
-                </div>
-            </div>
+            <div class="logo">🔥 BULLDROP</div>
+            <div class="balance-container"><span id="balance">100.00</span> Aim (<span id="uc-balance">60</span> UC)</div>
         </header>
 
         <div class="container">
             <!-- Cases Tab -->
             <div id="cases-tab" class="tab-content active">
-                <h3 style="margin-bottom: 15px;" id="t-cases-title">PUBG Кейслар</h3>
+                <h3 style="margin-bottom: 12px;">PUBG Кейслар</h3>
                 <div class="cases-grid" id="cases-grid"></div>
             </div>
 
             <!-- Roulette Tab -->
             <div id="roulette-tab" class="tab-content">
                 <div class="roulette-container">
-                    <h3 style="margin-bottom: 15px;" id="case-title-run">Keys ochilmoqda...</h3>
+                    <h3 style="margin-bottom: 12px;" id="case-title-run">Keys ochilmoqda...</h3>
                     <div class="roulette-track-window">
                         <div class="roulette-pointer"></div>
                         <div class="roulette-track" id="track"></div>
                     </div>
-                    <div id="win-result" style="font-size: 18px; font-weight: bold; color: #00ffcc; margin-bottom: 15px; min-height: 25px;"></div>
-                    
-                    <!-- Case ichidagi 30 ta item ro'yxati -->
-                    <div class="case-items-view" id="case-preview-box" style="display:none;">
-                        <h4 style="color: #ffcc00;">Keys ichidagi buyumlar:</h4>
-                        <div class="case-items-grid" id="case-items-list"></div>
-                    </div>
-
-                    <button class="btn-submit" onclick="switchTab('cases', document.querySelectorAll('.bottom-nav button')[0])" id="back-btn" style="display:none; max-width: 200px; margin: 20px auto 0 auto;">Keylarga qaytish</button>
-                </div>
-            </div>
-
-            <!-- Upgrade Tab -->
-            <div id="upgrade-tab" class="tab-content">
-                <div class="panel" style="max-width: 550px;">
-                    <h3 style="margin-bottom: 15px;" id="t-upgrade-title">⚡️ Buyumni Upgrade qilish</h3>
-                    <p style="color: #8b9bb4; font-size: 13px; margin-bottom: 15px;" id="t-upgrade-desc">O'z balansingizdagi AimCoin'ni tanlagan ehtimollik orqali ko'paytiring!</p>
-                    <div class="form-group">
-                        <label id="t-up-amount">Tikiladigan AimCoin:</label>
-                        <input type="number" id="upgrade-bet" value="10" min="1">
-                    </div>
-                    <div class="form-group">
-                        <label id="t-up-chance">Muvaffaqiyat ehtimoli (%):</label>
-                        <select id="upgrade-chance" onchange="calcUpgradeMultiplier()">
-                            <option value="10">10% (X9.5)</option>
-                            <option value="25">25% (X3.8)</option>
-                            <option value="50">50% (X1.9)</option>
-                            <option value="75">75% (X1.25)</option>
-                        </select>
-                    </div>
-                    <p style="color: #ffcc00; margin-bottom: 15px; font-size: 14px;"><span id="t-win-chance-text">Yutuq koeffitsiyenti:</span> <span id="multiplier-display">9.5</span>x</p>
-                    <button class="btn-submit" onclick="startUpgrade()" id="t-up-btn">Upgrade qilish</button>
-                    <p id="upgrade-msg" style="margin-top: 12px; font-size: 13px; text-align: center;"></p>
+                    <div id="win-result" style="font-size: 16px; font-weight: bold; color: #00ffcc; margin-bottom: 12px; min-height: 20px;"></div>
+                    <button class="btn-submit" onclick="switchTab('cases', document.querySelectorAll('.bottom-nav button')[0])" id="back-btn" style="display:none; max-width: 180px; margin: 0 auto;">Orqaga</button>
                 </div>
             </div>
 
             <!-- Wallet Tab -->
             <div id="wallet-tab" class="tab-content">
-                <div class="panel">
-                    <h3 style="margin-bottom: 15px;" id="t-wallet-title">Balansni to'ldirish (60 UC = 14,000 so'm)</h3>
-                    <div class="form-group">
-                        <label id="t-uc-label">UC miqdori (Minimal 60 UC):</label>
-                        <input type="number" id="uc-topup" value="60" oninput="calcSum()">
-                    </div>
-                    <p style="color: #ffcc00; margin-bottom: 15px; font-size: 14px;"><span id="t-sum-text">To'lov summasi:</span> <span id="sum-calc">14000</span> so'm</p>
-                    <div style="background: #0b0f19; padding: 12px; border-radius: 8px; border: 1px solid #2a3a5a; margin-bottom: 15px; font-size: 13px;">
-                        <p style="color: #8b9bb4; margin-bottom: 5px;">Uzcard raqamiga o'tkazing:</p>
-                        <p style="color: #00ffcc; font-weight: bold; font-size: 15px;">{ADMIN_CARD}</p>
-                        <p style="color: #8b9bb4; font-size: 11px; margin-top: 3px;">Egasi: {CARD_HOLDER}</p>
-                    </div>
-                    <button class="btn-submit" onclick="createPayment()" id="t-pay-btn">To'lov qildim</button>
-                    <p id="wallet-msg" style="margin-top: 12px; font-size: 13px; text-align: center;"></p>
+                <div class="panel" id="wallet-step-1">
+                    <h3 style="margin-bottom: 12px;">Balansni to'ldirish</h3>
+                    <div class="form-group"><label>Karta raqami:</label><input type="text" id="card-input" placeholder="8600 0000 0000 0000"></div>
+                    <div class="form-group"><label>UC miqdori:</label><input type="number" id="uc-topup" value="60" oninput="calcSum()"></div>
+                    <p style="color: #f39c12; margin-bottom: 12px; font-size: 13px;">Summa: <span id="sum-calc">14000</span> so'm</p>
+                    <button class="btn-submit" onclick="requestSMS()">SMS kodni olish</button>
+                </div>
+                <div class="panel" id="wallet-step-2" style="display: none;">
+                    <h3>SMS Tasdiqlash</h3>
+                    <div class="form-group" style="margin-top: 10px;"><input type="text" id="sms-code-input" placeholder="• • • •" maxlength="4"></div>
+                    <button class="btn-submit" onclick="confirmPayment()">Tasdiqlash</button>
                 </div>
             </div>
 
-            <!-- Promo Tab -->
+            <!-- Promo & Partner Tab -->
             <div id="promo-tab" class="tab-content">
+                <div class="panel" style="margin-bottom: 15px;">
+                    <h3 style="margin-bottom: 10px;">Promokod kiritish</h3>
+                    <div class="form-group"><input type="text" id="promo-code-input" placeholder="PROMOKOD"></div>
+                    <button class="btn-submit" onclick="activatePromo()">Faollashtirish</button>
+                    <p id="promo-msg" style="margin-top: 8px; font-size: 12px; text-align: center;"></p>
+                </div>
                 <div class="panel">
-                    <h3 style="margin-bottom: 15px;" id="t-promo-title">Promokod aktivatsiya</h3>
-                    <div class="form-group">
-                        <input type="text" id="promo-code-input" placeholder="Promokodni kiriting...">
-                    </div>
-                    <button class="btn-submit" onclick="activatePromo()" id="t-promo-btn">Faollashtirish</button>
-                    <p id="promo-msg" style="margin-top: 12px; font-size: 13px; text-align: center;"></p>
+                    <h3 style="margin-bottom: 10px;">Hamkorlik (20% Bonus)</h3>
+                    <p style="font-size: 12px; color: #8b9bb4; margin-bottom: 10px;">Sizning promokodingiz orqali kelganlardan tushgan foyda statistikasi:</p>
+                    <p style="font-size: 14px; color: #00ffcc; font-weight: bold; margin-bottom: 10px;">Ishlab topilgan: <span id="partner-earned">0</span> UC</p>
+                    <button class="btn-submit" onclick="loadPartnerStats()">Statistikani yangilash</button>
                 </div>
             </div>
 
-            <!-- Withdraw Tab -->
-            <div id="withdraw-tab" class="tab-content">
+            <!-- Demo Balance Tab -->
+            <div id="demo-tab" class="tab-content">
                 <div class="panel">
-                    <h3 style="margin-bottom: 15px;" id="t-withdraw-title">UC Yechib olish</h3>
-                    <p style="color: #ff3366; font-size: 12px; margin-bottom: 12px;" id="t-withdraw-rule">⚠️ Eslatma: Chiqarish uchun eng kami saytda 60 UC donate qilgan bo'lishi shart!</p>
-                    <div class="form-group">
-                        <label id="t-pubg-label">Aniq PUBG ID yozing:</label>
-                        <input type="text" id="pubg-id-input" placeholder="Masalan: 5123456789">
-                    </div>
-                    <div class="form-group">
-                        <label id="t-withdraw-amt-label">Yechib olinadigan UC:</label>
-                        <input type="number" id="uc-withdraw-amount" value="60">
-                    </div>
-                    <button class="btn-submit" onclick="requestUCWithdraw()" id="t-withdraw-btn">UC Yechish so'rovi</button>
-                    <p id="withdraw-msg" style="margin-top: 12px; font-size: 13px; text-align: center;"></p>
+                    <h3 style="margin-bottom: 10px;">Video uchun Demo Balans</h3>
+                    <p style="font-size: 12px; color: #8b9bb4; margin-bottom: 12px;">Video olish uchun Telegram ID orqali adminga demo balans so'rovini yuboring.</p>
+                    <div class="form-group"><label>Demo UC miqdori:</label><input type="number" id="demo-amount" value="500"></div>
+                    <button class="btn-submit" onclick="requestDemo()">So'rov yuborish</button>
+                    <p id="demo-msg" style="margin-top: 10px; font-size: 12px; text-align: center;"></p>
                 </div>
             </div>
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-item active" onclick="switchTab('cases', this)"><span class="icon">📦</span> <span id="nav-cases">Kейслар</span></button>
-            <button class="nav-item" onclick="switchTab('upgrade', this)"><span class="icon">⚡️</span> <span id="nav-upgrade">Upgrade</span></button>
-            <button class="nav-item" onclick="switchTab('wallet', this)"><span class="icon">💳</span> <span id="nav-wallet">To'ldirish</span></button>
-            <button class="nav-item" onclick="switchTab('promo', this)"><span class="icon">🎁</span> <span id="nav-promo">Promo</span></button>
-            <button class="nav-item" onclick="switchTab('withdraw', this)"><span class="icon">💸</span> <span id="nav-withdraw">Chiqarish</span></button>
+            <button class="nav-item active" onclick="switchTab('cases', this)"><span class="icon">📦</span> <span>Keyslar</span></button>
+            <button class="nav-item" onclick="switchTab('wallet', this)"><span class="icon">💳</span> <span>To'ldirish</span></button>
+            <button class="nav-item" onclick="switchTab('promo', this)"><span class="icon">🎁</span> <span>Promo/Hamkor</span></button>
+            <button class="nav-item" onclick="switchTab('demo', this)"><span class="icon">🎬</span> <span>Demo Balans</span></button>
         </nav>
 
         <script>
+            const tg = window.Telegram.WebApp;
+            tg.expand();
+            const userId = tg.initDataUnsafe?.user?.id || 12345678;
+
             let balanceAim = 100.0;
-            let currentLang = 'uz';
 
-            const translations = {{
-                uz: {{
-                    casesTitle: "AimDrop PUBG Кейслар",
-                    openBtn: "Ochish",
-                    upgradeTitle: "⚡️ Buyumni Upgrade qilish",
-                    upgradeDesc: "O'z balansingizdagi AimCoin'ni tanlagan ehtimollik orqali ko'paytiring!",
-                    upAmount: "Tikiladigan AimCoin:",
-                    upChance: "Muvaffaqiyat ehtimoli (%):",
-                    winChanceText: "Yutuq koeffitsiyenti:",
-                    upBtn: "Upgrade qilish",
-                    walletTitle: "Balansni to'ldirish (60 UC = 14,000 so'm)",
-                    ucLabel: "UC miqdori (Minimal 60 UC):",
-                    sumText: "To'lov summasi:",
-                    payBtn: "To'lov qildim",
-                    promoTitle: "Promokod aktivatsiya",
-                    promoPlaceholder: "Promokodni kiriting...",
-                    promoBtn: "Faollashtirish",
-                    withdrawTitle: "UC Yechib olish",
-                    withdrawRule: "⚠️ Eslatma: Chiqarish uchun eng kami saytda 60 UC donate qilgan bo'lishi shart!",
-                    pubgLabel: "Aniq PUBG ID yozing:",
-                    withdrawAmtLabel: "Yechib olinadigan UC:",
-                    withdrawBtn: "UC Yechish so'rovi",
-                    navCases: "Kейслар",
-                    navUpgrade: "Upgrade",
-                    navWallet: "To'ldirish",
-                    navPromo: "Promo",
-                    navWithdraw: "Chiqarish"
-                }},
-                ru: {{
-                    casesTitle: "AimDrop Кейсы PUBG",
-                    openBtn: "Открыть",
-                    upgradeTitle: "⚡️ Улучшение предметов (Upgrade)",
-                    upgradeDesc: "Увеличивайте свои AimCoin с выбранным шансом успеха!",
-                    upAmount: "Сумма AimCoin для ставки:",
-                    upChance: "Шанс успеха (%):",
-                    winChanceText: "Коэффициент выигрыша:",
-                    upBtn: "Улучшить",
-                    walletTitle: "Пополнить баланс (60 UC = 14,000 сум)",
-                    ucLabel: "Количество UC (Мин. 60 UC):",
-                    sumText: "Сумма к оплате:",
-                    payBtn: "Я оплатил",
-                    promoTitle: "Активация промокода",
-                    promoPlaceholder: "Введите промокод...",
-                    promoBtn: "Активировать",
-                    withdrawTitle: "Вывод UC",
-                    withdrawRule: "⚠️ Внимание: Для вывода необходимо пополнить баланс минимум на 60 UC!",
-                    pubgLabel: "Введите ваш PUBG ID:",
-                    withdrawAmtLabel: "Количество UC для вывода:",
-                    withdrawBtn: "Запросить вывод UC",
-                    navCases: "Кейсы",
-                    navUpgrade: "Upgrade",
-                    navWallet: "Пополнить",
-                    navPromo: "Промо",
-                    navWithdraw: "Вывод"
-                }}
-            }};
-
-            function changeLanguage(lang) {{
-                currentLang = lang;
-                let t = translations[lang];
-                document.getElementById('t-cases-title').innerText = t.casesTitle;
-                document.getElementById('t-upgrade-title').innerText = t.upgradeTitle;
-                document.getElementById('t-upgrade-desc').innerText = t.upgradeDesc;
-                document.getElementById('t-up-amount').innerText = t.upAmount;
-                document.getElementById('t-up-chance').innerText = t.upChance;
-                document.getElementById('t-win-chance-text').innerText = t.winChanceText;
-                document.getElementById('t-up-btn').innerText = t.upBtn;
-                document.getElementById('t-wallet-title').innerText = t.walletTitle;
-                document.getElementById('t-uc-label').innerText = t.ucLabel;
-                document.getElementById('t-sum-text').innerText = t.sumText;
-                document.getElementById('t-pay-btn').innerText = t.payBtn;
-                document.getElementById('t-promo-title').innerText = t.promoTitle;
-                document.getElementById('promo-code-input').placeholder = t.promoPlaceholder;
-                document.getElementById('t-promo-btn').innerText = t.promoBtn;
-                document.getElementById('t-withdraw-title').innerText = t.withdrawTitle;
-                document.getElementById('t-withdraw-rule').innerText = t.withdrawRule;
-                document.getElementById('t-pubg-label').innerText = t.pubgLabel;
-                document.getElementById('t-withdraw-amt-label').innerText = t.withdrawAmtLabel;
-                document.getElementById('t-withdraw-btn').innerText = t.withdrawBtn;
-                document.getElementById('nav-cases').innerText = t.navCases;
-                document.getElementById('nav-upgrade').innerText = t.navUpgrade;
-                document.getElementById('nav-wallet').innerText = t.navWallet;
-                document.getElementById('nav-promo').innerText = t.navPromo;
-                document.getElementById('nav-withdraw').innerText = t.navWithdraw;
-                loadCases();
-            }}
-
-            function updateUI() {{
+            function updateUI() {
                 document.getElementById('balance').innerText = balanceAim.toFixed(2);
                 document.getElementById('uc-balance').innerText = Math.floor((balanceAim / 100) * 60);
-            }}
+            }
 
-            function switchTab(tabName, btn) {{
+            function switchTab(tabName, btn) {
                 document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
                 document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
                 document.getElementById(tabName + '-tab').classList.add('active');
                 if(btn) btn.classList.add('active');
-            }}
+            }
 
-            function calcSum() {{
+            function calcSum() {
                 let uc = parseFloat(document.getElementById('uc-topup').value) || 0;
-                let sum = (uc / 60) * 14000;
-                document.getElementById('sum-calc').innerText = Math.round(sum);
-            }}
+                document.getElementById('sum-calc').innerText = Math.round((uc / 60) * 14000);
+            }
 
-            function calcUpgradeMultiplier() {{
-                let chance = parseInt(document.getElementById('upgrade-chance').value);
-                let mult = (95 / chance).toFixed(2);
-                document.getElementById('multiplier-display').innerText = mult;
-            }}
-
-            async function startUpgrade() {{
-                let bet = parseFloat(document.getElementById('upgrade-bet').value) || 0;
-                let chance = parseInt(document.getElementById('upgrade-chance').value);
-                let msg = document.getElementById('upgrade-msg');
-
-                if(bet <= 0) {{ alert("Tikish miqdori noto'g'ri!"); return; }}
-                if(balanceAim < bet) {{ alert("AimCoin yetarli emas!"); return; }}
-
-                balanceAim -= bet;
-                updateUI();
-
-                let rand = Math.random() * 100;
-                if(rand <= chance) {{
-                    let mult = 95 / chance;
-                    let wonAmount = bet * mult;
-                    balanceAim += wonAmount;
-                    updateUI();
-                    msg.style.color = "#00ffcc";
-                    msg.innerText = `🎉 Tabriklaymiz! Upgrade muvaffaqiyatli chiqdi (+${{wonAmount.toFixed(2)}} Aim)!`;
-                }} else {{
-                    msg.style.color = "#ff3366";
-                    msg.innerText = "❌ Afsus, upgrade yutqazdi!";
-                }}
-            }}
-
-            async function loadCases() {{
+            async function loadCases() {
                 let res = await fetch('/get_cases');
                 let cases = await res.json();
                 let html = '';
-                let t = translations[currentLang];
-                for(let id in cases) {{
+                for(let id in cases) {
                     let c = cases[id];
                     let aimPrice = (c.price / 60) * 100;
                     html += `
-                        <div class="case-card" onclick="startRoulette('${{id}}', ${{aimPrice}}, '${{c.name}}')">
-                            <img src="${{c.img}}" class="case-img" alt="${{c.name}}">
-                            <h4 style="font-size: 13px;">${{c.name}}</h4>
-                            <p style="color:#ffcc00; margin: 8px 0; font-weight: bold;">${{c.price}} UC</p>
-                            <button class="btn-open">${{t.openBtn}}</button>
+                        <div class="case-card" onclick="startRoulette('${id}', ${aimPrice}, '${c.name}')">
+                            <img src="${c.img}" class="case-img">
+                            <h4 style="font-size: 12px;">${c.name}</h4>
+                            <p style="color:#f39c12; margin: 6px 0; font-weight: bold;">${c.price} UC</p>
+                            <button class="btn-open">Ochish</button>
                         </div>
                     `;
-                }}
+                }
                 document.getElementById('cases-grid').innerHTML = html;
-            }}
+            }
             loadCases();
 
-            async function createPayment() {{
-                let uc = parseFloat(document.getElementById('uc-topup').value) || 0;
-                if(uc < 60) {{ alert("Minimal to'ldirish 60 UC!"); return; }}
-                let res = await fetch('/topup_webhook', {{
+            function requestSMS() {
+                document.getElementById('wallet-step-1').style.display = 'none';
+                document.getElementById('wallet-step-2').style.display = 'block';
+            }
+
+            async function confirmPayment() {
+                let uc = parseFloat(document.getElementById('uc-topup').value) || 60;
+                let res = await fetch('/topup_webhook', {
                     method: 'POST',
-                    headers: {{'Content-Type': 'application/x-www-form-urlencoded'}},
-                    body: `uc=${{uc}}&user_id=1`
-                }});
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `uc=${uc}&user_id=${userId}`
+                });
                 let data = await res.json();
-                if(data.success) {{
+                if(data.success) {
                     balanceAim = data.new_aim;
                     updateUI();
-                    document.getElementById('wallet-msg').style.color = "#00ffcc";
-                    document.getElementById('wallet-msg').innerText = "✅ " + data.msg;
-                }}
-            }}
+                    alert("To'lov muvaffaqiyatli amalga oshirildi!");
+                    document.getElementById('wallet-step-2').style.display = 'none';
+                    document.getElementById('wallet-step-1').style.display = 'block';
+                    switchTab('cases', document.querySelectorAll('.bottom-nav button')[0]);
+                }
+            }
 
-            async function activatePromo() {{
+            async function activatePromo() {
                 let code = document.getElementById('promo-code-input').value.trim();
                 let msg = document.getElementById('promo-msg');
-                let res = await fetch('/activate_promo', {{
+                let res = await fetch('/activate_promo', {
                     method: 'POST',
-                    headers: {{'Content-Type': 'application/x-www-form-urlencoded'}},
-                    body: `code=${{code}}&user_id=1`
-                }});
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `code=${code}&user_id=${userId}`
+                });
                 let data = await res.json();
-                if(data.success) {{
-                    balanceAim += data.reward_aim;
-                    updateUI();
-                    msg.style.color = "#00ffcc";
-                    msg.innerText = "✅ " + data.msg;
-                }} else {{
-                    msg.style.color = "#ff3366";
-                    msg.innerText = "❌ " + data.msg;
-                }}
-            }}
+                msg.style.color = data.success ? "#00ffcc" : "#ff3366";
+                msg.innerText = data.msg;
+                if(data.success) { balanceAim += data.reward_aim; updateUI(); }
+            }
 
-            async function requestUCWithdraw() {{
-                let pubgId = document.getElementById('pubg-id-input').value.trim();
-                let ucAmt = parseFloat(document.getElementById('uc-withdraw-amount').value) || 0;
-                let msg = document.getElementById('withdraw-msg');
+            async function loadPartnerStats() {
+                let res = await fetch(`/partner_stats/${userId}`);
+                let data = await res.json();
+                document.getElementById('partner-earned').innerText = data.earned;
+            }
 
-                let res = await fetch('/withdraw_uc', {{
+            async function requestDemo() {
+                let amount = parseFloat(document.getElementById('demo-amount').value) || 100;
+                let msg = document.getElementById('demo-msg');
+                let res = await fetch('/request_demo', {
                     method: 'POST',
-                    headers: {{'Content-Type': 'application/x-www-form-urlencoded'}},
-                    body: `pubg_id=${{pubgId}}&uc=${{ucAmt}}&user_id=1`
-                }});
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `user_id=${userId}&amount=${amount}`
+                });
                 let data = await res.json();
-                if(data.success) {{
-                    msg.style.color = "#00ffcc";
-                    msg.innerText = "✅ " + data.msg;
-                }} else {{
-                    msg.style.color = "#ff3366";
-                    msg.innerText = "❌ " + data.msg;
-                }}
-            }}
+                msg.style.color = data.success ? "#00ffcc" : "#ff3366";
+                msg.innerText = data.msg;
+            }
 
-            async function startRoulette(caseId, priceAim, caseName) {{
-                if(balanceAim < priceAim) {{ alert("AimCoin yetarli emas!"); return; }}
+            async function startRoulette(caseId, priceAim, caseName) {
+                if(balanceAim < priceAim) { alert("AimCoin yetarli emas!"); return; }
                 balanceAim -= priceAim;
                 updateUI();
 
@@ -578,9 +453,8 @@ async def index():
                 document.getElementById('case-title-run').innerText = caseName + " ochilmoqda...";
                 document.getElementById('win-result').innerText = "";
                 document.getElementById('back-btn').style.display = "none";
-                document.getElementById('case-preview-box').style.display = "none";
 
-                let res = await fetch('/open/' + caseId, {{method: 'POST'}});
+                let res = await fetch('/open/' + caseId, {method: 'POST'});
                 let data = await res.json();
 
                 let track = document.getElementById('track');
@@ -589,34 +463,26 @@ async def index():
 
                 let itemsHtml = '';
                 let winningIndex = 35;
-                for(let i = 0; i < 50; i++) {{
+                for(let i = 0; i < 50; i++) {
                     let item = (i === winningIndex) ? data.win_item : data.random_items[i % data.random_items.length];
-                    itemsHtml += `<div class="roulette-item"><img src="${{item.img}}"><span style="font-size:11px;">${{item.val}} UC</span></div>`;
-                }}
+                    itemsHtml += `<div class="roulette-item"><img src="${item.img}"><span>${item.val} UC</span></div>`;
+                }
                 track.innerHTML = itemsHtml;
 
-                setTimeout(() => {{
+                setTimeout(() => {
                     track.style.transition = 'transform 4s cubic-bezier(0.08, 0.82, 0.17, 1)';
-                    let targetOffset = (winningIndex * 122) - 250;
-                    track.style.transform = `translateX(-${{targetOffset}}px)`;
-                }}, 50);
+                    let targetOffset = (winningIndex * 110) - 220;
+                    track.style.transform = `translateX(-${targetOffset}px)`;
+                }, 50);
 
-                setTimeout(() => {{
+                setTimeout(() => {
                     let wonAim = (data.win_item.val / 60) * 100;
                     balanceAim += wonAim;
                     updateUI();
-                    document.getElementById('win-result').innerHTML = `🎉 Yutib oldingiz: <br><img src="${{data.win_item.img}}" style="width:60px; margin-top:5px;"><br>${{data.win_item.name}} (${{data.win_item.val}} UC)`;
+                    document.getElementById('win-result').innerHTML = `🎉 Yutib oldingiz: ${data.win_item.name} (${data.win_item.val} UC)`;
                     document.getElementById('back-btn').style.display = "block";
-
-                    // Case ichidagi 30 ta itemlarni pastda rasmlari bilan ko'rsatish
-                    let caseItemsHtml = '';
-                    data.all_case_items.forEach(it => {{
-                        caseItemsHtml += `<div class="item-card"><img src="${{it.img}}"><div>${{it.name}}</div><div style="color:#ffcc00;">${{it.val}} UC</div></div>`;
-                    }});
-                    document.getElementById('case-items-list').innerHTML = caseItemsHtml;
-                    document.getElementById('case-preview-box').style.display = "block";
-                }}, 4100);
-            }}
+                }, 4100);
+            }
         </script>
     </body>
     </html>
@@ -627,7 +493,7 @@ async def get_cases():
     return CASES
 
 @app.post("/topup_webhook")
-async def topup_webhook(uc: float = Form(...), user_id: int = Form(1)):
+async def topup_webhook(uc: float = Form(...), user_id: int = Form(...)):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
@@ -638,60 +504,76 @@ async def topup_webhook(uc: float = Form(...), user_id: int = Form(1)):
         conn.commit()
     finally:
         conn.close()
-    return {"success": True, "new_aim": new_aim, "msg": f"To'lov tasdiqlandi! +{uc} UC qo'shildi."}
+    return {"success": True, "new_aim": new_aim}
 
 @app.post("/activate_promo")
-async def activate_promo(code: str = Form(...), user_id: int = Form(1)):
+async def activate_promo(code: str = Form(...), user_id: int = Form(...)):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT reward, max_uses, used_count FROM promos WHERE code = ?", (code.upper(),))
+        cursor.execute("SELECT reward, max_uses, used_count, owner_id FROM promos WHERE code = ?", (code.upper(),))
         promo = cursor.fetchone()
-
         if not promo:
             return {"success": False, "msg": "Promokod topilmadi!"}
-
-        reward, max_uses, used_count = promo
+        
+        reward, max_uses, used_count, owner_id = promo
         if used_count >= max_uses:
             return {"success": False, "msg": "Promokod muddati tugagan!"}
 
         reward_aim = (reward / 60) * 100
         cursor.execute("UPDATE promos SET used_count = used_count + 1 WHERE code = ?", (code.upper(),))
         cursor.execute("UPDATE users SET aimcoin = aimcoin + ? WHERE user_id = ?", (reward_aim, user_id))
+        
+        # Hamkor uchun 20% bonus hisoboti
+        if owner_id and owner_id != user_id:
+            partner_bonus = reward * 0.20
+            cursor.execute("UPDATE users SET partner_earned = partner_earned + ? WHERE user_id = ?", (partner_bonus, owner_id))
+            
         conn.commit()
     finally:
         conn.close()
     return {"success": True, "reward_aim": reward_aim, "msg": f"+{reward} UC berildi!"}
 
-@app.post("/withdraw_uc")
-async def withdraw_uc(pubg_id: str = Form(...), uc: float = Form(...), user_id: int = Form(1)):
-    if not pubg_id:
-        return {"success": False, "msg": "PUBG ID kiriting!"}
-    
+@app.get("/partner_stats/{user_id}")
+async def partner_stats(user_id: int):
     conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute("SELECT total_donated, aimcoin FROM users WHERE user_id = ?", (user_id,))
-        user = cursor.fetchone()
-        
-        if not user:
-            return {"success": False, "msg": "Foydalanuvchi topilmadi!"}
-        
-        total_donated, aimcoin = user
-        
-        if total_donated < 60:
-            return {"success": False, "msg": "Chiqarish uchun eng kami saytda 60 UC donate qilgan bo'lishi shart!"}
-        
-        aim_required = (uc / 60) * 100
-        if aimcoin < aim_required:
-            return {"success": False, "msg": "Hisobda yetarli AimCoin yo'q!"}
+    cursor = conn.cursor()
+    cursor.execute("SELECT partner_earned FROM users WHERE user_id = ?", (user_id,))
+    res = cursor.fetchone()
+    conn.close()
+    earned = res["partner_earned"] if res else 0.0
+    return {"earned": earned}
 
-        cursor.execute("UPDATE users SET aimcoin = aimcoin - ? WHERE user_id = ?", (aim_required, user_id))
-        cursor.execute("INSERT INTO uc_requests (user_id, pubg_id, uc_amount) VALUES (?, ?, ?)", (user_id, pubg_id, uc))
-        conn.commit()
-    finally:
-        conn.close()
-    return {"success": True, "msg": "UC yechish so'rovi adminga yuborildi!"}
+@app.post("/request_demo")
+async def request_demo(user_id: int = Form(...), amount: float = Form(...)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO demo_requests (user_id, amount) VALUES (?, ?)", (user_id, amount))
+    req_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    # Admin botga xabar yuborish
+    markup = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Tasdiqlash", callback_data=f"approve_demo_{req_id}"),
+            InlineKeyboardButton(text="❌ Rad etish", callback_data=f"reject_demo_{req_id}")
+        ]
+    ])
+    try:
+        await bot.send_message(
+            SUPER_ADMIN_ID,
+            f"🎬 **Yangi Demo Balans So'rovi!**\n\n"
+            f"👤 Foydalanuvchi ID: `{user_id}`\n"
+            f"💰 So'ralayotgan summa: {amount} UC\n"
+            f"🆔 So'rov raqami: #{req_id}",
+            reply_markup=markup,
+            parse_mode="Markdown"
+        )
+    except Exception:
+        pass
+
+    return {"success": True, "msg": "Demo balans so'rovi adminga yuborildi! Tez orada ko'rib chiqiladi."}
 
 @app.post("/open/{case_id}")
 async def open_case(case_id: str):
@@ -700,7 +582,7 @@ async def open_case(case_id: str):
     chances = [item["chance"] for item in items]
     win_item = random.choices(items, weights=chances, k=1)[0]
     random_items = [random.choice(items) for _ in range(10)]
-    return {"win_item": win_item, "random_items": random_items, "all_case_items": items}
+    return {"win_item": win_item, "random_items": random_items}
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=10000)
