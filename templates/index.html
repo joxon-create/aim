@@ -3,261 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bulldrop Style Case Opening</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>AimDrop - Professional O'yin va Keyslar Ekotizimi</title>
+    <meta name="description" content="AimDrop orqali eng zo'r PUBG uslubidagi keyslarni oching va noyob buyumlarni qo'lga kiriting." />
     <style>
-        :root {
-            --bg-color: #0f1319;
-            --card-bg: #161c24;
-            --accent: #f39c12;
-            --accent-glow: rgba(243, 156, 18, 0.4);
-            --text-color: #ffffff;
-            --secondary-text: #95a5a6;
-        }
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: Arial, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
             margin: 0;
             padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
         }
         header {
-            width: 100%;
-            padding: 15px;
-            background: var(--card-bg);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            background: #1e293b;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid #334155;
         }
-        .balance-box {
-            background: #222b36;
-            padding: 8px 15px;
-            border-radius: 20px;
-            border: 1px solid var(--accent);
-            font-weight: bold;
+        header h1 {
+            color: #38bdf8;
+            margin: 0;
         }
         .container {
-            width: 90%;
-            max-width: 600px;
-            margin-top: 20px;
-            text-align: center;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
         }
-        /* Case Roulette Animation */
-        .roulette-container {
-            position: relative;
-            width: 100%;
-            height: 140px;
-            background: var(--card-bg);
-            border: 2px solid #2c3e50;
+        .cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .case-card {
+            background: #1e293b;
             border-radius: 12px;
-            overflow: hidden;
-            margin: 20px 0;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid #334155;
         }
-        .selector-line {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            width: 4px;
-            height: 100%;
-            background: var(--accent);
-            transform: translateX(-50%);
-            z-index: 10;
-            box-shadow: 0 0 10px var(--accent);
+        .case-card img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            border-radius: 8px;
         }
-        .roulette-track {
-            display: flex;
-            position: absolute;
-            left: 0;
-            top: 10px;
-            transition: transform 4s cubic-bezier(0.15, 0.85, 0.35, 1);
+        .case-card h3 {
+            margin: 15px 0 5px 0;
+            color: #e2e8f0;
         }
-        .case-item {
-            min-width: 110px;
-            height: 120px;
-            background: #1e2631;
-            margin: 0 6px;
-            border-radius: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-bottom: 4px solid #7f8c8d;
+        .price {
+            color: #4ade80;
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 15px;
         }
-        .case-item img { width: 60px; height: 60px; object-fit: contain; }
-        .case-item span { font-size: 12px; margin-top: 5px; }
-        
+        .items-list {
+            text-align: left;
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .items-list ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #94a3b8;
+        }
         .btn {
-            background: linear-gradient(135deg, #f39c12, #d35400);
+            background: #2563eb;
             color: white;
             border: none;
-            padding: 12px 30px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 25px;
+            padding: 10px 20px;
+            border-radius: 6px;
             cursor: pointer;
-            box-shadow: 0 4px 15px var(--accent-glow);
-            transition: 0.2s;
+            font-weight: bold;
+            width: 100%;
+            transition: background 0.2s;
         }
-        .btn:active { transform: scale(0.95); }
-        
-        /* Modal Style */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
-        .modal-content {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 15px;
-            width: 85%;
-            max-width: 350px;
-            text-align: center;
-            border: 1px solid #2c3e50;
-        }
-        .modal-content input {
-            width: 90%;
-            padding: 10px;
-            margin: 10px 0;
-            background: #0f1319;
-            border: 1px solid #34495e;
-            color: white;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 16px;
+        .btn:hover {
+            background: #1d4ed8;
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h2>BULLDROP</h2>
-        <div class="balance-box" id="balanceDisplay">Balans: 0 UZS</div>
+        <h1>AIM-DROP.UZ</h1>
+        <p>Eng zo'r AIM keyslar va PUBG uslubidagi sovrinlar platformasi</p>
     </header>
 
     <div class="container">
-        <h3>Keysni Ochish</h3>
-        
-        <!-- Roulette -->
-        <div class="roulette-container">
-            <div class="selector-line"></div>
-            <div class="roulette-track" id="track">
-                <!-- Items generated by JS -->
+        <h2>Mavjud AimDrop Keyslari</h2>
+        <div class="cases-grid">
+            {% for case in cases %}
+            <div class="case-card">
+                <!-- Har bir rasmda AIM mazmuni aks etgan -->
+                <img src="{{ case.image }}" alt="{{ case.name }}">
+                <h3>{{ case.name }}</h3>
+                <div class="price">Narxi: {{ case.price }} UC</div>
+                
+                <div class="items-list">
+                    <strong>Ichidagi PUBG buyumlari:</strong>
+                    <ul>
+                        {% for item in case.items %}
+                        <li>{{ item.name }} <span style="color: #64748b;">({{ item.chance }})</span></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <button class="btn">Keysni Ochish (AIM)</button>
             </div>
-        </div>
-
-        <button class="btn" onclick="startOpen()">Ochish (10,000 UZS)</button>
-        <br><br>
-        <button class="btn" style="background: #27ae60;" onclick="openDepositModal()">Balansni To'ldirish</button>
-    </div>
-
-    <!-- Deposit Modal -->
-    <div class="modal" id="depositModal">
-        <div class="modal-content" id="modalStep1">
-            <h3>Karta Raqamini Kiriting</h3>
-            <input type="text" id="cardNumber" placeholder="8600 0000 0000 0000">
-            <input type="number" id="depositAmount" placeholder="Summani kiriting (UZS)">
-            <br>
-            <button class="btn" onclick="sendSMSCode()">Davom etish</button>
-        </div>
-        <div class="modal-content" id="modalStep2" style="display: none;">
-            <h3>SMS Kodni Kiriting</h3>
-            <p style="font-size: 13px; color: var(--secondary-text);">Ulangan telefon raqamiga kod yuborildi</p>
-            <input type="text" id="smsCode" placeholder="• • • •">
-            <br>
-            <button class="btn" onclick="verifySMS()">Tasdiqlash</button>
+            {% endfor %}
         </div>
     </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-
-        let userBalance = 50000; // Boshlang'ich test balans
-        document.getElementById('balanceDisplay').innerText = `Balans: ${userBalance} UZS`;
-
-        const items = [
-            {name: "AK-47 | Redline", color: "#eb4b4b"},
-            {name: "AWP | Asiimov", color: "#d32f2f"},
-            {name: "Glove | Emerald", color: "#27ae60"},
-            {name: "Knife | Karambit", color: "#f39c12"},
-            {name: "USP-S | Cortex", color: "#9b59b6"},
-            {name: "P250 | Sand Dune", color: "#7f8c8d"}
-        ];
-
-        function initTrack() {
-            const track = document.getElementById('track');
-            let html = '';
-            for(let i=0; i<30; i++) {
-                let randItem = items[Math.floor(Math.random() * items.length)];
-                html += `<div class="case-item" style="border-bottom-color: ${randItem.color}">
-                    <span>📦</span>
-                    <span style="font-size:10px">${randItem.name}</span>
-                </div>`;
-            }
-            track.innerHTML = html;
-        }
-        initTrack();
-
-        function startOpen() {
-            if(userBalance < 10000) {
-                alert("Balansda mablag' yetarli emas!");
-                return;
-            }
-            userBalance -= 10000;
-            document.getElementById('balanceDisplay').innerText = `Balans: ${userBalance} UZS`;
-
-            const track = document.getElementById('track');
-            initTrack(); // yangi elementlar
-            track.style.transition = 'none';
-            track.style.transform = 'translateX(0px)';
-            
-            setTimeout(() => {
-                track.style.transition = 'transform 4s cubic-bezier(0.15, 0.85, 0.35, 1)';
-                // Tasodifiy to'xtash nuqtasi
-                let randomOffset = Math.floor(Math.random() * 1200) + 1500;
-                track.style.transform = `translateX(-${randomOffset}px)`;
-            }, 50);
-        }
-
-        function openDepositModal() {
-            document.getElementById('depositModal').style.display = 'flex';
-        }
-
-        function sendSMSCode() {
-            let card = document.getElementById('cardNumber').value;
-            if(card.length < 16) {
-                alert("Karta raqami xato!");
-                return;
-            }
-            // Simulyatsiya: SMS yuborildi
-            document.getElementById('modalStep1').style.display = 'none';
-            document.getElementById('modalStep2').style.display = 'block';
-        }
-
-        function verifySMS() {
-            let code = document.getElementById('smsCode').value;
-            let amount = parseInt(document.getElementById('depositAmount').value) || 0;
-            if(code.length === 4) {
-                userBalance += amount;
-                document.getElementById('balanceDisplay').innerText = `Balans: ${userBalance} UZS`;
-                alert("Muvaffaqiyatli to'landi va balansga qo'shildi!");
-                document.getElementById('depositModal').style.display = 'none';
-                // Reset modals
-                document.getElementById('modalStep1').style.display = 'block';
-                document.getElementById('modalStep2').style.display = 'none';
-            } else {
-                alert("SMS kod noto'g'ri!");
-            }
-        }
-    </script>
 </body>
 </html>
