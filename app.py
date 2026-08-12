@@ -1,6 +1,5 @@
 import random
 import sqlite3
-import threading
 import asyncio
 import uvicorn
 from fastapi import FastAPI, Request, Form
@@ -83,7 +82,7 @@ def is_admin(user_id: int) -> bool:
     conn.close()
     return res is not None
 
-# --- TELEGRAM BOT (BARQAROR POLLING) ---
+# --- TELEGRAM BOT ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
@@ -96,7 +95,7 @@ async def cmd_start(message: types.Message):
 
     keyboard = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="🎬 Demo Balans So'rash"), KeyboardButton(text="📊 Mening Statistikam")]
+            [KeyboardButton(text="🎬 Aim Balans So'rash"), KeyboardButton(text="📊 Mening Aim Statistikam")]
         ],
         resize_keyboard=True
     )
@@ -104,14 +103,14 @@ async def cmd_start(message: types.Message):
     await message.answer(
         f"🔥 **AIMDROP** rasmiy botiga xush kelibsiz!\n"
         f"Sizning Telegram ID raqamingiz: `{user_id}`\n\n"
-        f"Pastdagi tugmalar orqali demo balans so'rashingiz mumkin.",
+        f"Pastdagi tugmalar orqali Aim balans so'rashingiz va Web App orqali keyslar ochishingiz mumkin.",
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
 
-@dp.message(F.text == "🎬 Demo Balans So'rash")
+@dp.message(F.text == "🎬 Aim Balans So'rash")
 async def ask_demo_start(message: types.Message):
-    await message.answer("Iltimos, demo balans sifatida olmoqchi bo'lgan UC miqdorini yuboring (masalan: `500`):", parse_mode="Markdown")
+    await message.answer("Iltimos, demo sifatida olmoqchi bo'lgan Aim miqdorini yuboring (masalan: `500`):", parse_mode="Markdown")
 
 @dp.message(F.text.regexp(r'^\d+(\.\d+)?$'))
 async def process_demo_amount(message: types.Message):
@@ -134,9 +133,9 @@ async def process_demo_amount(message: types.Message):
     try:
         await bot.send_message(
             SUPER_ADMIN_ID,
-            f"🎬 **Yangi Bot Demo So'rovi!**\n\n"
+            f"🎬 **Yangi Aim So'rovi!**\n\n"
             f"👤 Foydalanuvchi ID: `{user_id}`\n"
-            f"💰 Miqdor: {amount} UC\n"
+            f"💎 Miqdor: {amount} Aim\n"
             f"🆔 So'rov ID: #{req_id}",
             reply_markup=markup,
             parse_mode="Markdown"
@@ -144,9 +143,9 @@ async def process_demo_amount(message: types.Message):
     except Exception:
         pass
 
-    await message.answer(f"✅ Demo so'rovingiz ({amount} UC) adminga yuborildi! Tez orada ko'rib chiqiladi.")
+    await message.answer(f"✅ Aim so'rovingiz ({amount} Aim) adminga yuborildi! Tez orada ko'rib chiqiladi.")
 
-@dp.message(F.text == "📊 Mening Statistikam")
+@dp.message(F.text == "📊 Mening Aim Statistikam")
 async def my_stats(message: types.Message):
     user_id = message.from_user.id
     conn = get_db_connection()
@@ -158,7 +157,7 @@ async def my_stats(message: types.Message):
         aim = user["aimcoin"]
         uc = (aim / 100) * 60
         earned = user["partner_earned"]
-        await message.answer(f"📊 **SizningProfilingiz:**\n\n💎 AimCoin: {aim:.2f}\n💰 UC Ekvivalenti: {uc:.1f} UC\n🤝 Hamkorlikdan topilgan: {earned} UC")
+        await message.answer(f"📊 **AimProfilingiz:**\n\n💎 AimCoin: {aim:.2f} Aim\n💰 UC Ekvivalenti: {uc:.1f} UC\n🤝 Aim Hamkorlikdan topilgan: {earned} Aim")
 
 @dp.callback_query(F.data.startswith("approve_demo_"))
 async def approve_demo(callback: types.CallbackQuery):
@@ -172,13 +171,12 @@ async def approve_demo(callback: types.CallbackQuery):
         conn.close()
         return
     user_id, amount = req["user_id"], req["amount"]
-    aim_add = (amount / 60) * 100
-    cursor.execute("UPDATE users SET aimcoin = aimcoin + ? WHERE user_id = ?", (aim_add, user_id))
+    cursor.execute("UPDATE users SET aimcoin = aimcoin + ? WHERE user_id = ?", (amount, user_id))
     cursor.execute("UPDATE demo_requests SET status = 'approved' WHERE id = ?", (req_id,))
     conn.commit()
     conn.close()
-    await callback.message.edit_text(f"✅ Demo so'rov (#{req_id}) tasdiqlandi! +{amount} UC qo'shildi.")
-    await bot.send_message(user_id, f"🎉 Tabriklaymiz! Admin demo so'rovingizni tasdiqladi: +{amount} UC qo'shildi.")
+    await callback.message.edit_text(f"✅ Aim so'rov (#{req_id}) tasdiqlandi! +{amount} Aim qo'shildi.")
+    await bot.send_message(user_id, f"🎉 Tabriklaymiz! Admin aim so'rovingizni tasdiqladi: +{amount} Aim qo'shildi.")
 
 @dp.callback_query(F.data.startswith("reject_demo_"))
 async def reject_demo(callback: types.CallbackQuery):
@@ -189,37 +187,42 @@ async def reject_demo(callback: types.CallbackQuery):
     cursor.execute("UPDATE demo_requests SET status = 'rejected' WHERE id = ?", (req_id,))
     conn.commit()
     conn.close()
-    await callback.message.edit_text(f"❌ Demo so'rov (#{req_id}) rad etildi.")
+    await callback.message.edit_text(f"❌ Aim so'rov (#{req_id}) rad etildi.")
 
-def run_telegram_bot():
-    asyncio.run(dp.start_polling(bot, skip_updates=True))
-
+# --- FASTAPI STARTUP (ASOSIY OQIMDA ISHLATISH - XATOLIKNI OLDINI OLISH) ---
 @app.on_event("startup")
-def startup_event():
-    t = threading.Thread(target=run_telegram_bot, daemon=True)
-    t.start()
+async def startup_event():
+    async def run_telegram_bot():
+        try:
+            await dp.start_polling(bot, skip_updates=True)
+        except Exception as e:
+            print(f"Bot polling xatosi: {e}")
+            
+    asyncio.create_task(run_telegram_bot())
 
-# --- PUBG ITEMS & CASES ---
-PUBG_ITEMS_POOL = [
-    {"name": "M416 'Glacier'", "val": 2800, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 0.05},
-    {"name": "AWM 'The Fool'", "val": 2500, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 0.1},
-    {"name": "Pan 'BFC'", "val": 450, "img": "https://cdn-icons-png.flaticon.com/512/1046/1046857.png", "chance": 2.0},
-    {"name": "Helmet Lv.3", "val": 350, "img": "https://cdn-icons-png.flaticon.com/512/807/807281.png", "chance": 5.0},
-    {"name": "Silver Fragment", "val": 15, "img": "https://cdn-icons-png.flaticon.com/512/217/217853.png", "chance": 92.85},
+# --- AIMDROP CASES & ITEMS ---
+AIMDROP_ITEMS_POOL = [
+    {"name": "AimDrop M416 'Glacier'", "val": 2800, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 0.05},
+    {"name": "AimDrop AWM 'The Fool'", "val": 2500, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 0.1},
+    {"name": "AimDrop Pan 'BFC'", "val": 450, "img": "https://cdn-icons-png.flaticon.com/512/1046/1046857.png", "chance": 2.0},
+    {"name": "Aim Helmet Lv.3", "val": 350, "img": "https://cdn-icons-png.flaticon.com/512/807/807281.png", "chance": 5.0},
+    {"name": "Aim Silver Fragment", "val": 15, "img": "https://cdn-icons-png.flaticon.com/512/217/217853.png", "chance": 92.85},
 ]
 
 CASES = {}
 for i in range(1, 21):
-    price = 10 if i == 1 else round(10 + (290 / 19) * (i - 1), 1)
-    items = [dict(item, val=round(price * random.uniform(0.3, 2.5), 1)) for item in PUBG_ITEMS_POOL]
+    price_uc = 10 if i == 1 else round(10 + (290 / 19) * (i - 1), 1)
+    price_aim = (price_uc / 60) * 100
+    items = [dict(item, val=round(price_aim * random.uniform(0.3, 2.5), 1)) for item in AIMDROP_ITEMS_POOL]
     CASES[f"case_{i}"] = {
-        "name": f"Case #{i}",
-        "price": price,
+        "name": f"AimDrop Case #{i}",
+        "price_uc": price_uc,
+        "price_aim": round(price_aim, 2),
         "img": "https://cdn-icons-png.flaticon.com/512/3313/3313498.png",
         "items": items
     }
 
-# --- FASTAPI 3D WEB APP ---
+# --- FASTAPI WEB APP (HTML/JS) ---
 @app.get("/", response_class=HTMLResponse)
 async def index():
     return HTMLResponse(content="""
@@ -228,7 +231,7 @@ async def index():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AIMDROP - Ultimate 3D</title>
+        <title>AIMDROP - Ultimate Aim & UC</title>
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
         <style>
             * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
@@ -310,7 +313,7 @@ async def index():
         <div class="container">
             <!-- Cases Tab -->
             <div id="cases-tab" class="tab-content active">
-                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 700;">PUBG Кейслаr</h3>
+                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 700;">AimDrop Keyslari</h3>
                 <div class="cases-grid" id="cases-grid"></div>
             </div>
 
@@ -318,8 +321,8 @@ async def index():
             <div id="case-detail-tab" class="tab-content">
                 <div class="case-view">
                     <img id="detail-img" src="" style="width: 75px; height: 75px; object-fit: contain; margin-bottom: 6px;">
-                    <h2 id="detail-name" style="margin-bottom: 4px; font-size: 18px;">Case</h2>
-                    <p style="color: #f59e0b; font-weight: 700; font-size: 15px;" id="detail-price-text">10 UC</p>
+                    <h2 id="detail-name" style="margin-bottom: 4px; font-size: 18px;">AimDrop Case</h2>
+                    <p style="color: #f59e0b; font-weight: 700; font-size: 15px;" id="detail-price-text">10 UC (16.67 Aim)</p>
                     
                     <p style="font-size: 12px; color: #94a3b8; margin-top: 10px;">Nechta ochishni tanlang:</p>
                     <div class="multi-select">
@@ -331,7 +334,7 @@ async def index():
                         <button class="count-btn" onclick="setCount(10, this)">10 ta</button>
                     </div>
 
-                    <p style="font-size: 13px; margin-bottom: 10px;">Umumiy: <span id="total-open-price" style="color: #fbbf24; font-weight: bold;">10</span> UC (<span id="total-open-aim" style="color: #34d399; font-weight: bold;">16.67</span> Aim)</p>
+                    <p style="font-size: 13px; margin-bottom: 10px;">Umumiy narx: <span id="total-open-price" style="color: #fbbf24; font-weight: bold;">10</span> UC (<span id="total-open-aim" style="color: #34d399; font-weight: bold;">16.67</span> Aim)</p>
                     
                     <div id="roulette-section" style="display: none;">
                         <div class="roulettes-container" id="roulettes-container-box"></div>
@@ -340,7 +343,7 @@ async def index():
                     <div id="win-result" style="font-size: 14px; font-weight: bold; color: #34d399; margin: 12px 0; min-height: 25px;"></div>
                     
                     <div style="display: flex; gap: 10px;">
-                        <button class="btn-submit" onclick="openSelectedCase()" id="action-btn">Barchasini Ochish</button>
+                        <button class="btn-submit" onclick="openSelectedCase()" id="action-btn">AimDrop Barchasini Ochish</button>
                         <button class="count-btn" onclick="switchTab('cases', document.querySelectorAll('.bottom-nav button')[0])" style="flex:1;">Orqaga</button>
                     </div>
                 </div>
@@ -348,7 +351,7 @@ async def index():
 
             <!-- Inventory Tab -->
             <div id="inventory-tab" class="tab-content">
-                <h3 style="margin-bottom: 12px; font-size: 18px; font-weight: 700;">Mening Inventarim</h3>
+                <h3 style="margin-bottom: 12px; font-size: 18px; font-weight: 700;">Aim Inventarim</h3>
                 <p style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">Olingan buyumlarni sotib Aim/UC ga aylantirishingiz yoki saqlab turishingiz mumkin.</p>
                 <div class="inventory-grid" id="inventory-grid"></div>
             </div>
@@ -357,32 +360,32 @@ async def index():
             <div id="games-tab" class="tab-content">
                 <div class="game-panel">
                     <div class="games-menu">
-                        <button class="game-tab-btn active" onclick="switchGame('mines', this)">Mines</button>
-                        <button class="game-tab-btn" onclick="switchGame('tower', this)">Tower</button>
-                        <button class="game-tab-btn" onclick="switchGame('crash', this)">Crash</button>
+                        <button class="game-tab-btn active" onclick="switchGame('mines', this)">Aim Mines</button>
+                        <button class="game-tab-btn" onclick="switchGame('tower', this)">Aim Tower</button>
+                        <button class="game-tab-btn" onclick="switchGame('crash', this)">Aim Crash</button>
                     </div>
 
                     <div id="game-mines" class="sub-game">
-                        <h3 style="margin-bottom: 10px;">Mines O'yini</h3>
+                        <h3 style="margin-bottom: 10px;">Aim Mines O'yini</h3>
                         <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="mines-bet" value="10"></div>
                         <div class="mines-grid" id="mines-board"></div>
-                        <button class="btn-submit" onclick="startMines()">O'yinni Boshlash</button>
+                        <button class="btn-submit" onclick="startMines()">Aim O'yinni Boshlash</button>
                     </div>
 
                     <div id="game-tower" class="sub-game" style="display: none;">
-                        <h3 style="margin-bottom: 10px;">Tower O'yini</h3>
+                        <h3 style="margin-bottom: 10px;">Aim Tower O'yini</h3>
                         <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="tower-bet" value="10"></div>
                         <div class="tower-grid" id="tower-board"></div>
-                        <button class="btn-submit" onclick="startTower()">Qurishni Boshlash</button>
+                        <button class="btn-submit" onclick="startTower()">Aim Qurishni Boshlash</button>
                     </div>
 
                     <div id="game-crash" class="sub-game" style="display: none;">
-                        <h3 style="margin-bottom: 10px;">Crash O'yini</h3>
+                        <h3 style="margin-bottom: 10px;">Aim Crash O'yini</h3>
                         <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="crash-bet" value="10"></div>
                         <div class="crash-screen">
                             <div class="crash-multiplier" id="crash-mult">1.00x</div>
                         </div>
-                        <button class="btn-submit" onclick="startCrash()" id="crash-btn">Uchishni Boshlash</button>
+                        <button class="btn-submit" onclick="startCrash()" id="crash-btn">Aim Uchishni Boshlash</button>
                     </div>
                 </div>
             </div>
@@ -390,15 +393,15 @@ async def index():
             <!-- Wallet Tab (To'ldirish + Promo Slot) -->
             <div id="wallet-tab" class="tab-content">
                 <div class="panel" id="wallet-step-1">
-                    <h3 style="margin-bottom: 15px;">Balansni to'ldirish</h3>
+                    <h3 style="margin-bottom: 15px;">Aim Balansni To'ldirish</h3>
                     <div class="form-group"><label>Karta raqami:</label><input type="text" id="card-input" placeholder="8600 0000 0000 0000"></div>
-                    <div class="form-group"><label>UC miqdori:</label><input type="number" id="uc-topup" value="60" oninput="calcSum()"></div>
-                    <div class="form-group"><label>🎁 Promokod (Hamkor bonus +20%):</label><input type="text" id="wallet-promo-input" placeholder="PROMOKOD (Ixtiyoriy)"></div>
+                    <div class="form-group"><label>UC miqdori (Aim ekvivalenti bilan):</label><input type="number" id="uc-topup" value="60" oninput="calcSum()"></div>
+                    <div class="form-group"><label>🎁 Aim Hamkor Promokodi (+20% Bonus):</label><input type="text" id="wallet-promo-input" placeholder="PROMOKOD (Ixtiyoriy)"></div>
                     <p style="color: #f59e0b; margin-bottom: 15px; font-size: 13px; font-weight: 600;">Summa: <span id="sum-calc">14000</span> so'm</p>
                     <button class="btn-submit" onclick="requestSMS()">SMS kodni olish</button>
                 </div>
                 <div class="panel" id="wallet-step-2" style="display: none;">
-                    <h3 style="margin-bottom: 15px;">SMS Tasdiqlash</h3>
+                    <h3 style="margin-bottom: 15px;">Aim SMS Tasdiqlash</h3>
                     <div class="form-group"><input type="text" id="sms-code-input" placeholder="• • • •" maxlength="4"></div>
                     <button class="btn-submit" onclick="confirmPayment()">Tasdiqlash</button>
                 </div>
@@ -407,22 +410,22 @@ async def index():
             <!-- Promo Tab -->
             <div id="promo-tab" class="tab-content">
                 <div class="panel" style="margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 12px;">Promokod kiritish</h3>
+                    <h3 style="margin-bottom: 12px;">Aim Promokod kiritish</h3>
                     <div class="form-group"><input type="text" id="promo-code-input" placeholder="PROMOKOD"></div>
                     <button class="btn-submit" onclick="activatePromo()">Faollashtirish</button>
                     <p id="promo-msg" style="margin-top: 10px; font-size: 12px; text-align: center; font-weight: 600;"></p>
                 </div>
                 <div class="panel">
-                    <h3 style="margin-bottom: 10px;">Hamkorlik (20% Bonus)</h3>
-                    <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Sizning promokodingiz orqali tushgan daromad:</p>
-                    <p style="font-size: 15px; color: #34d399; font-weight: bold; margin-bottom: 12px;"><span id="partner-earned">0</span> UC</p>
+                    <h3 style="margin-bottom: 10px;">Aim Hamkorlik (20% Bonus)</h3>
+                    <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Sizning aim promokodingiz orqali tushgan daromad:</p>
+                    <p style="font-size: 15px; color: #34d399; font-weight: bold; margin-bottom: 12px;"><span id="partner-earned">0</span> Aim</p>
                     <button class="btn-submit" onclick="loadPartnerStats()">Yangilash</button>
                 </div>
             </div>
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-item active" onclick="switchTab('cases', this)"><span class="icon">📦</span> <span>Keyslar</span></button>
+            <button class="nav-item active" onclick="switchTab('cases', this)"><span class="icon">📦</span> <span>Aim Keyslar</span></button>
             <button class="nav-item" onclick="switchTab('inventory', this)"><span class="icon">🎒</span> <span>Inventar</span></button>
             <button class="nav-item" onclick="switchTab('games', this)"><span class="icon">🎮</span> <span>O'yinlar</span></button>
             <button class="nav-item" onclick="switchTab('wallet', this)"><span class="icon">💳</span> <span>To'ldirish</span></button>
@@ -437,6 +440,7 @@ async def index():
             let balanceAim = 100.0;
             let currentCaseId = null;
             let currentCasePriceUc = 0;
+            let currentCasePriceAim = 0;
             let selectedCount = 1;
 
             function updateUI() {
@@ -459,11 +463,11 @@ async def index():
                 for(let id in cases) {
                     let c = cases[id];
                     html += `
-                        <div class="case-card" onclick="selectCase('${id}', ${c.price}, '${c.name}', '${c.img}')">
+                        <div class="case-card" onclick="selectCase('${id}', ${c.price_uc}, ${c.price_aim}, '${c.name}', '${c.img}')">
                             <img src="${c.img}" class="case-img">
                             <h4 style="font-size: 13px; font-weight: 700;">${c.name}</h4>
-                            <p style="color:#fbbf24; margin: 6px 0; font-weight: 800; font-size: 14px;">${c.price} UC</p>
-                            <button class="btn-open">Tanlash</button>
+                            <p style="color:#fbbf24; margin: 6px 0; font-weight: 800; font-size: 14px;">${c.price_uc} UC <span style="font-size:11px; color:#34d399;">(${c.price_aim} Aim)</span></p>
+                            <button class="btn-open">Aim Tanlash</button>
                         </div>
                     `;
                 }
@@ -471,14 +475,15 @@ async def index():
             }
             loadCases();
 
-            function selectCase(id, price, name, img) {
+            function selectCase(id, priceUc, priceAim, name, img) {
                 currentCaseId = id;
-                currentCasePriceUc = price;
+                currentCasePriceUc = priceUc;
+                currentCasePriceAim = priceAim;
                 selectedCount = 1;
                 document.querySelectorAll('.count-btn').forEach((b, idx) => b.classList.toggle('active', idx === 0));
                 document.getElementById('detail-name').innerText = name;
                 document.getElementById('detail-img').src = img;
-                document.getElementById('detail-price-text').innerText = price + " UC (1 ta)";
+                document.getElementById('detail-price-text').innerText = `${priceUc} UC (${priceAim} Aim) - 1 ta`;
                 document.getElementById('win-result').innerText = "";
                 document.getElementById('roulette-section').style.display = 'none';
                 updateOpenCost();
@@ -494,14 +499,13 @@ async def index():
 
             function updateOpenCost() {
                 let totalUc = currentCasePriceUc * selectedCount;
-                let totalAim = (totalUc / 60) * 100;
+                let totalAim = currentCasePriceAim * selectedCount;
                 document.getElementById('total-open-price').innerText = totalUc.toFixed(1);
                 document.getElementById('total-open-aim').innerText = totalAim.toFixed(2);
             }
 
             async function openSelectedCase() {
-                let totalUc = currentCasePriceUc * selectedCount;
-                let totalAim = (totalUc / 60) * 100;
+                let totalAim = currentCasePriceAim * selectedCount;
                 if(balanceAim < totalAim) { alert("AimCoin yetarli emas!"); return; }
                 balanceAim -= totalAim;
                 updateUI();
@@ -535,7 +539,7 @@ async def index():
                     let itemsHtml = '';
                     for(let j = 0; j < 40; j++) {
                         let item = (j === 30) ? winObj : randArr[j % randArr.length];
-                        itemsHtml += `<div class="roulette-item"><img src="${item.img}"><span>${item.val} UC</span></div>`;
+                        itemsHtml += `<div class="roulette-item"><img src="${item.img}"><span>${item.val} Aim</span></div>`;
                     }
                     track.innerHTML = itemsHtml;
                     tracks.push(track);
@@ -549,7 +553,7 @@ async def index():
                 }, 50);
 
                 setTimeout(() => {
-                    document.getElementById('win-result').innerText = `🎉 Barchasi ochildi va inventaringizga qo'shildi!`;
+                    document.getElementById('win-result').innerText = `🎉 AimDrop barchasi ochildi va inventaringizga qo'shildi!`;
                 }, 4100);
             }
 
@@ -558,16 +562,17 @@ async def index():
                 let items = await res.json();
                 let grid = document.getElementById('inventory-grid');
                 if(items.length === 0) {
-                    grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #94a3b8; font-size: 13px;">Inventar bo'sh.</p>`;
+                    grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #94a3b8; font-size: 13px;">Aim inventari bo'sh.</p>`;
                     return;
                 }
                 let html = '';
                 items.forEach(item => {
+                    let ucEq = (item.val / 100) * 60;
                     html += `
                         <div class="inv-card">
                             <img src="${item.img}">
                             <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px;">${item.name}</div>
-                            <div style="font-size: 10px; color: #fbbf24; font-weight: bold;">${item.val} UC</div>
+                            <div style="font-size: 10px; color: #fbbf24; font-weight: bold;">${item.val} Aim <span style="color:#34d399">(${ucEq.toFixed(1)} UC)</span></div>
                             <div class="inv-actions">
                                 <button class="btn-sell" onclick="sellItem(${item.id})">Sotish</button>
                                 <button class="btn-keep" onclick="switchTab('inventory', null)">Saqlash</button>
@@ -606,7 +611,7 @@ async def index():
             for(let i=0; i<25; i++) {
                 let cell = document.createElement('button');
                 cell.className = 'mine-cell';
-                cell.innerText = '❓';
+                cell.innerText = '💎';
                 minesBoard.appendChild(cell);
             }
             function startMines() {
@@ -639,7 +644,7 @@ async def index():
                 let bet = parseFloat(document.getElementById('tower-bet').value) || 10;
                 if(balanceAim < bet) { alert("Aim yetarli emas!"); return; }
                 balanceAim -= bet; updateUI();
-                alert("Tower boshlandi! Qatorni tanlang.");
+                alert("Aim Tower boshlandi! Qatorni tanlang.");
             }
 
             function startCrash() {
@@ -728,7 +733,6 @@ async def open_case(case_id: str, user_id: int, count: int = Form(1)):
         random_items = [random.choice(items) for _ in range(15)]
         results.append({"win_item": win_item, "random_items": random_items})
         
-        # Avtomatik inventarga saqlash (Orqagani bosganda yoki ochilgach)
         cursor.execute("INSERT INTO inventory (user_id, name, val, img) VALUES (?, ?, ?, ?)", 
                        (user_id, win_item["name"], win_item["val"], win_item["img"]))
     conn.commit()
@@ -753,13 +757,12 @@ async def sell_item(item_id: int = Form(...), user_id: int = Form(...)):
     item = cursor.fetchone()
     if not item:
         conn.close()
-        return {"success": False, "msg": "Buyum topilmadi!"}
+        return {"success": False, "msg": "Aim buyum topilmadi!"}
     
-    uc_val = item["val"]
-    aim_add = (uc_val / 60) * 100
+    aim_val = item["val"]
     
     cursor.execute("DELETE FROM inventory WHERE id = ?", (item_id,))
-    cursor.execute("UPDATE users SET aimcoin = aimcoin + ? WHERE user_id = ?", (aim_add, user_id))
+    cursor.execute("UPDATE users SET aimcoin = aimcoin + ? WHERE user_id = ?", (aim_val, user_id))
     cursor.execute("SELECT aimcoin FROM users WHERE user_id = ?", (user_id,))
     new_aim = cursor.fetchone()[0]
     conn.commit()
@@ -781,17 +784,17 @@ async def topup_webhook(uc: float = Form(...), user_id: int = Form(...), promo: 
                 reward, max_uses, used_count, owner_id = p_data
                 if used_count < max_uses:
                     cursor.execute("UPDATE promos SET used_count = used_count + 1 WHERE code = ?", (promo.upper(),))
-                    final_uc = uc * 1.20  # 20% qo'shib berish
-                    bonus_msg = " +20% hamkor promokod bonusi bilan!"
+                    final_uc = uc * 1.20  
+                    bonus_msg = " +20% Aim hamkor promokod bonusi bilan!"
                     if owner_id and owner_id != user_id:
-                        partner_bonus = uc * 0.20
+                        partner_bonus = (uc / 60) * 100 * 0.20
                         cursor.execute("UPDATE users SET partner_earned = partner_earned + ? WHERE user_id = ?", (partner_bonus, owner_id))
                 else:
                     conn.close()
                     return {"success": False, "msg": "Promokod muddati tugagan!"}
             else:
                 conn.close()
-                return {"success": False, "msg": "Bunday promokod topilmadi!"}
+                return {"success": False, "msg": "Bunday aim promokod topilmadi!"}
 
         aim_add = (final_uc / 60) * 100
         cursor.execute("UPDATE users SET aimcoin = aimcoin + ?, total_donated = total_donated + ? WHERE user_id = ?", (aim_add, uc, user_id))
@@ -800,7 +803,7 @@ async def topup_webhook(uc: float = Form(...), user_id: int = Form(...), promo: 
         conn.commit()
     finally:
         conn.close()
-    return {"success": True, "new_aim": new_aim, "msg": f"To'lov bajarildi!{bonus_msg}"}
+    return {"success": True, "new_aim": new_aim, "msg": f"Aim to'lov bajarildi!{bonus_msg}"}
 
 @app.post("/activate_promo")
 async def activate_promo(code: str = Form(...), user_id: int = Form(...)):
@@ -809,7 +812,7 @@ async def activate_promo(code: str = Form(...), user_id: int = Form(...)):
         cursor = conn.cursor()
         cursor.execute("SELECT reward, max_uses, used_count, owner_id FROM promos WHERE code = ?", (code.upper(),))
         promo = cursor.fetchone()
-        if not promo: return {"success": False, "msg": "Promokod topilmadi!"}
+        if not promo: return {"success": False, "msg": "Aim promokod topilmadi!"}
         reward, max_uses, used_count, owner_id = promo
         if used_count >= max_uses: return {"success": False, "msg": "Muddati tugagan!"}
         
@@ -818,12 +821,12 @@ async def activate_promo(code: str = Form(...), user_id: int = Form(...)):
         cursor.execute("UPDATE users SET aimcoin = aimcoin + ? WHERE user_id = ?", (reward_aim, user_id))
         
         if owner_id and owner_id != user_id:
-            partner_bonus = reward * 0.20
+            partner_bonus = reward_aim * 0.20
             cursor.execute("UPDATE users SET partner_earned = partner_earned + ? WHERE user_id = ?", (partner_bonus, owner_id))
         conn.commit()
     finally:
         conn.close()
-    return {"success": True, "reward_aim": reward_aim, "msg": f"+{reward} UC berildi!"}
+    return {"success": True, "reward_aim": reward_aim, "msg": f"+{reward_aim:.1f} Aim berildi!"}
 
 @app.get("/partner_stats/{user_id}")
 async def partner_stats(user_id: int):
