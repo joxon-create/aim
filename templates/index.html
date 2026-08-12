@@ -2,121 +2,39 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AimDrop - Professional O'yin va Keyslar Ekotizimi</title>
-    <meta name="description" content="AimDrop orqali eng zo'r PUBG uslubidagi keyslarni oching va noyob buyumlarni qo'lga kiriting." />
+    <title>PUBG Case & Ecosystem</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background: #1e293b;
-            padding: 20px;
-            text-align: center;
-            border-bottom: 2px solid #334155;
-        }
-        header h1 {
-            color: #38bdf8;
-            margin: 0;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-        }
-        .cases-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-        }
-        .case-card {
-            background: #1e293b;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            border: 1px solid #334155;
-        }
-        .case-card img {
-            width: 100%;
-            height: 160px;
-            object-fit: cover;
-            border-radius: 8px;
-        }
-        .case-card h3 {
-            margin: 15px 0 5px 0;
-            color: #e2e8f0;
-        }
-        .price {
-            color: #4ade80;
-            font-weight: bold;
-            font-size: 18px;
-            margin-bottom: 15px;
-        }
-        .items-list {
-            text-align: left;
-            background: #0f172a;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 14px;
-            margin-bottom: 15px;
-        }
-        .items-list ul {
-            margin: 0;
-            padding-left: 20px;
-            color: #94a3b8;
-        }
-        .btn {
-            background: #2563eb;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-            transition: background 0.2s;
-        }
-        .btn:hover {
-            background: #1d4ed8;
-        }
+        body { background-color: #121212; color: #ffffff; font-family: sans-serif; }
+        .card { background-color: #1e1e1e; border: none; }
+        .crash-screen { font-size: 48px; font-weight: bold; color: #00ffcc; text-align: center; padding: 40px; }
     </style>
 </head>
 <body>
-
-    <header>
-        <h1>AIM-DROP.UZ</h1>
-        <p>Eng zo'r AIM keyslar va PUBG uslubidagi sovrinlar platformasi</p>
-    </header>
-
-    <div class="container">
-        <h2>Mavjud AimDrop Keyslari</h2>
-        <div class="cases-grid">
-            {% for case in cases %}
-            <div class="case-card">
-                <!-- Har bir rasmda AIM mazmuni aks etgan -->
-                <img src="{{ case.image }}" alt="{{ case.name }}">
-                <h3>{{ case.name }}</h3>
-                <div class="price">Narxi: {{ case.price }} UC</div>
-                
-                <div class="items-list">
-                    <strong>Ichidagi PUBG buyumlari:</strong>
-                    <ul>
-                        {% for item in case.items %}
-                        <li>{{ item.name }} <span style="color: #64748b;">({{ item.chance }})</span></li>
-                        {% endfor %}
-                    </ul>
+    <div class="container mt-5">
+        <h1 class="text-center">PUBG CASE & ECOSYSTEM</h1>
+        <hr>
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card p-4 text-center">
+                    <h3>Global Crash O'yini</h3>
+                    <div class="crash-screen" id="multiplier">1.00x</div>
+                    <p id="status-text" class="text-warning">Kutilmoqda...</p>
                 </div>
-
-                <button class="btn">Keysni Ochish (AIM)</button>
             </div>
-            {% endfor %}
         </div>
     </div>
 
+    <script>
+        function updateCrash() {
+            fetch('/api/crash_status')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('multiplier').innerText = data.multiplier + 'x';
+                    document.getElementById('status-text').innerText = data.status.toUpperCase();
+                });
+        }
+        setInterval(updateCrash, 200);
+    </script>
 </body>
 </html>
