@@ -2,9 +2,9 @@ import telebot
 from telebot import types
 import sqlite3
 
-TOKEN = "TOKENINGizni_SHU_YERGA_YOZING"
+TOKEN = "8253855521:AAEnxN8lQPRQPIWdVcTdv5Wp-bb9Tar1Mys"
 bot = telebot.TeleBot(TOKEN)
-ADMIN_ID = 123456789 # O'z Telegram ID ingizni yozing
+ADMIN_ID = 8692517241 # O'z Telegram ID ingizni yozing
 
 def db_conn():
     return sqlite3.connect('pubg_ecosystem.db', check_same_thread=False)
