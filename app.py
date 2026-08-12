@@ -12,7 +12,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeybo
 app = FastAPI()
 
 # --- SOZLAMALAR ---
-BOT_TOKEN = "8253855521:AAHluezqlI9NphF0Wp99NeiuMrWxHilbing"
+BOT_TOKEN = "8253855521:AAEl02CAYiP0534lsze69VyMlWnJX-9BSTo"
 SUPER_ADMIN_ID = 8692517241
 
 bot = Bot(token=BOT_TOKEN)
@@ -74,7 +74,7 @@ def is_admin(user_id: int) -> bool:
     conn.close()
     return res is not None
 
-# --- TELEGRAM BOT (DEMO BALANS BOT ICHIDA) ---
+# --- TELEGRAM BOT (BARQAROR POLLING) ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
@@ -93,7 +93,7 @@ async def cmd_start(message: types.Message):
     )
 
     await message.answer(
-        f"🔥 **BULLDROP** rasmiy botiga xush kelibsiz!\n"
+        f"🔥 **AIMDROP** rasmiy botiga xush kelibsiz!\n"
         f"Sizning Telegram ID raqamingiz: `{user_id}`\n\n"
         f"Pastdagi tugmalar orqali demo balans so'rashingiz mumkin.",
         reply_markup=keyboard,
@@ -135,7 +135,7 @@ async def process_demo_amount(message: types.Message):
     except Exception:
         pass
 
-    await message.answer(f"✅ Demo balans so'rovingiz ({amount} UC) adminga yuborildi! Tez orada ko'rib chiqiladi.")
+    await message.answer(f"✅ Demo so'rovingiz ({amount} UC) adminga yuborildi! Tez orada ko'rib chiqiladi.")
 
 @dp.message(F.text == "📊 Mening Statistikam")
 async def my_stats(message: types.Message):
@@ -183,9 +183,7 @@ async def reject_demo(callback: types.CallbackQuery):
     await callback.message.edit_text(f"❌ Demo so'rov (#{req_id}) rad etildi.")
 
 def run_telegram_bot():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(dp.start_polling(bot))
+    asyncio.run(dp.start_polling(bot, skip_updates=True))
 
 @app.on_event("startup")
 def startup_event():
@@ -212,7 +210,7 @@ for i in range(1, 21):
         "items": items
     }
 
-# --- FASTAPI 3D WEB APP (MINES, TOWER, CRASH, CASES) ---
+# --- FASTAPI 3D WEB APP ---
 @app.get("/", response_class=HTMLResponse)
 async def index():
     return HTMLResponse(content="""
@@ -221,7 +219,7 @@ async def index():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>BULLDROP - Ultimate 3D</title>
+        <title>AIMDROP - Ultimate 3D</title>
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
         <style>
             * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
@@ -236,53 +234,51 @@ async def index():
             .tab-content.active { display: block; }
             @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-            /* Grid & Cards */
             .cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
             .case-card { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); transform-style: preserve-3d; }
             .case-card:hover { transform: translateY(-6px) scale(1.02); border-color: rgba(245, 158, 11, 0.5); box-shadow: 0 20px 35px -10px rgba(245, 158, 11, 0.2); }
             .case-img { width: 80px; height: 80px; object-fit: contain; margin: 10px auto; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.6)); }
             .btn-open { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; padding: 8px; width: 100%; border-radius: 8px; font-weight: 700; margin-top: 10px; cursor: pointer; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); }
 
-            .case-view { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 25px; text-align: center; max-width: 600px; margin: 0 auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); }
-            .multi-select { display: flex; justify-content: center; gap: 8px; margin: 20px 0; flex-wrap: wrap; }
+            .case-view { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 25px; text-align: center; max-width: 650px; margin: 0 auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); }
+            .multi-select { display: flex; justify-content: center; gap: 8px; margin: 15px 0; flex-wrap: wrap; }
             .count-btn { background: #334155; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
             .count-btn.active { background: #f59e0b; color: #0f172a; border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
 
-            /* Roulette Track */
-            .roulette-track-window { width: 100%; overflow: hidden; position: relative; height: 130px; background: #020617; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
-            .roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #ef4444; transform: translateX(-50%); z-index: 10; box-shadow: 0 0 10px #ef4444; }
-            .roulette-track { display: flex; position: absolute; left: 0; top: 8px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }
-            .roulette-item { min-width: 110px; height: 114px; background: #1e293b; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 6px; font-size: 11px; padding: 6px; }
-            .roulette-item img { width: 55px; height: 55px; object-fit: contain; margin-bottom: 6px; }
+            /* Bulldrop Style Multi-Roulettes Container */
+            .roulettes-container { display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; margin: 15px 0; padding-right: 5px; }
+            .roulettes-container::-webkit-scrollbar { width: 4px; }
+            .roulettes-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 
-            /* Mini Games UI (Mines, Tower, Crash) */
+            .roulette-track-window { width: 100%; overflow: hidden; position: relative; height: 110px; background: #020617; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+            .roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #ef4444; transform: translateX(-50%); z-index: 10; box-shadow: 0 0 10px #ef4444; }
+            .roulette-track { display: flex; position: absolute; left: 0; top: 6px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }
+            .roulette-item { min-width: 98px; height: 96px; background: #1e293b; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 5px; font-size: 11px; padding: 4px; }
+            .roulette-item img { width: 45px; height: 45px; object-fit: contain; margin-bottom: 4px; }
+
+            /* Mini Games UI */
             .game-panel { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px; max-width: 500px; margin: 0 auto; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
             .games-menu { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
             .game-tab-btn { background: #334155; border: none; color: #fff; padding: 8px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; }
             .game-tab-btn.active { background: #f59e0b; color: #0f172a; }
 
-            /* Mines */
             .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 15px 0; }
             .mine-cell { aspect-ratio: 1; background: #334155; border: none; border-radius: 8px; font-size: 20px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
             .mine-cell:hover { background: #475569; }
 
-            /* Tower */
             .tower-grid { display: flex; flex-direction: column-reverse; gap: 6px; margin: 15px 0; }
             .tower-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
             .tower-cell { background: #334155; border: none; height: 40px; border-radius: 8px; cursor: pointer; font-weight: bold; color: #fff; }
 
-            /* Crash */
             .crash-screen { height: 180px; background: #020617; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); margin: 15px 0; position: relative; overflow: hidden; }
             .crash-multiplier { font-size: 36px; font-weight: 900; color: #34d399; text-shadow: 0 0 20px rgba(52, 211, 153, 0.4); }
 
-            /* Panels & Forms */
             .panel { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); padding: 24px; border-radius: 20px; max-width: 440px; margin: 0 auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
             .form-group { margin-bottom: 15px; text-align: left; }
             .form-group label { display: block; margin-bottom: 6px; color: #94a3b8; font-size: 12px; font-weight: 600; }
             .form-group input { width: 100%; padding: 12px; background: #020617; border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 10px; font-size: 14px; text-align: center; outline: none; }
             .btn-submit { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; padding: 12px; width: 100%; border-radius: 10px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
 
-            /* Bottom Nav */
             .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(15px); border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }
             .nav-item { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-weight: 600; }
             .nav-item.active { color: #f59e0b; text-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
@@ -291,25 +287,25 @@ async def index():
     </head>
     <body>
         <header>
-            <div class="logo">BULLDROP</div>
+            <div class="logo">AIMDROP</div>
             <div class="balance-container"><span id="balance">100.00</span> Aim (<span id="uc-balance">60</span> UC)</div>
         </header>
 
         <div class="container">
             <!-- Cases Tab -->
             <div id="cases-tab" class="tab-content active">
-                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 700;">PUBG 3D Кейслар</h3>
+                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 700;">PUBG 3D Кейслаr</h3>
                 <div class="cases-grid" id="cases-grid"></div>
             </div>
 
             <!-- Case Detail View -->
             <div id="case-detail-tab" class="tab-content">
                 <div class="case-view">
-                    <img id="detail-img" src="" style="width: 90px; height: 90px; object-fit: contain; margin-bottom: 10px;">
-                    <h2 id="detail-name" style="margin-bottom: 5px;">Case</h2>
-                    <p style="color: #f59e0b; font-weight: 700; font-size: 16px;" id="detail-price-text">10 UC</p>
+                    <img id="detail-img" src="" style="width: 75px; height: 75px; object-fit: contain; margin-bottom: 6px;">
+                    <h2 id="detail-name" style="margin-bottom: 4px; font-size: 18px;">Case</h2>
+                    <p style="color: #f59e0b; font-weight: 700; font-size: 15px;" id="detail-price-text">10 UC</p>
                     
-                    <p style="font-size: 12px; color: #94a3b8; margin-top: 15px;">Nechta ochishni tanlang:</p>
+                    <p style="font-size: 12px; color: #94a3b8; margin-top: 10px;">Nechta ochishni tanlang:</p>
                     <div class="multi-select">
                         <button class="count-btn active" onclick="setCount(1, this)">1 ta</button>
                         <button class="count-btn" onclick="setCount(2, this)">2 ta</button>
@@ -319,19 +315,16 @@ async def index():
                         <button class="count-btn" onclick="setCount(10, this)">10 ta</button>
                     </div>
 
-                    <p style="font-size: 13px; margin-bottom: 15px;">Umumiy: <span id="total-open-price" style="color: #fbbf24; font-weight: bold;">10</span> UC (<span id="total-open-aim" style="color: #34d399; font-weight: bold;">16.67</span> Aim)</p>
+                    <p style="font-size: 13px; margin-bottom: 10px;">Umumiy: <span id="total-open-price" style="color: #fbbf24; font-weight: bold;">10</span> UC (<span id="total-open-aim" style="color: #34d399; font-weight: bold;">16.67</span> Aim)</p>
                     
                     <div id="roulette-section" style="display: none;">
-                        <div class="roulette-track-window">
-                            <div class="roulette-pointer"></div>
-                            <div class="roulette-track" id="track"></div>
-                        </div>
+                        <div class="roulettes-container" id="roulettes-container-box"></div>
                     </div>
 
-                    <div id="win-result" style="font-size: 14px; font-weight: bold; color: #34d399; margin: 15px 0; min-height: 25px;"></div>
+                    <div id="win-result" style="font-size: 14px; font-weight: bold; color: #34d399; margin: 12px 0; min-height: 25px;"></div>
                     
                     <div style="display: flex; gap: 10px;">
-                        <button class="btn-submit" onclick="openSelectedCase()" id="action-btn">Ochish</button>
+                        <button class="btn-submit" onclick="openSelectedCase()" id="action-btn">Barchasini Ochish</button>
                         <button class="count-btn" onclick="switchTab('cases', document.querySelectorAll('.bottom-nav button')[0])" style="flex:1;">Orqaga</button>
                     </div>
                 </div>
@@ -346,7 +339,6 @@ async def index():
                         <button class="game-tab-btn" onclick="switchGame('crash', this)">Crash</button>
                     </div>
 
-                    <!-- Mines Game -->
                     <div id="game-mines" class="sub-game">
                         <h3 style="margin-bottom: 10px;">Mines O'yini</h3>
                         <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="mines-bet" value="10"></div>
@@ -354,7 +346,6 @@ async def index():
                         <button class="btn-submit" onclick="startMines()">O'yinni Boshlash</button>
                     </div>
 
-                    <!-- Tower Game -->
                     <div id="game-tower" class="sub-game" style="display: none;">
                         <h3 style="margin-bottom: 10px;">Tower O'yini</h3>
                         <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="tower-bet" value="10"></div>
@@ -362,7 +353,6 @@ async def index():
                         <button class="btn-submit" onclick="startTower()">Qurishni Boshlash</button>
                     </div>
 
-                    <!-- Crash Game -->
                     <div id="game-crash" class="sub-game" style="display: none;">
                         <h3 style="margin-bottom: 10px;">Crash O'yini</h3>
                         <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="crash-bet" value="10"></div>
@@ -380,6 +370,7 @@ async def index():
                     <h3 style="margin-bottom: 15px;">Balansni to'ldirish</h3>
                     <div class="form-group"><label>Karta raqami:</label><input type="text" id="card-input" placeholder="8600 0000 0000 0000"></div>
                     <div class="form-group"><label>UC miqdori:</label><input type="number" id="uc-topup" value="60" oninput="calcSum()"></div>
+                    <div class="form-group"><label>Promokod (Hamkor bonus +20%):</label><input type="text" id="wallet-promo-input" placeholder="PROMOKOD (Ixtiyoriy)"></div>
                     <p style="color: #f59e0b; margin-bottom: 15px; font-size: 13px; font-weight: 600;">Summa: <span id="sum-calc">14000</span> so'm</p>
                     <button class="btn-submit" onclick="requestSMS()">SMS kodni olish</button>
                 </div>
@@ -390,7 +381,7 @@ async def index():
                 </div>
             </div>
 
-            <!-- Promo & Partner Tab -->
+            <!-- Promo Tab -->
             <div id="promo-tab" class="tab-content">
                 <div class="panel" style="margin-bottom: 20px;">
                     <h3 style="margin-bottom: 12px;">Promokod kiritish</h3>
@@ -483,6 +474,7 @@ async def index():
                 document.getElementById('total-open-aim').innerText = totalAim.toFixed(2);
             }
 
+            // BULLDROP STYLE MULTI-CASES OPENING ANIMATION
             async function openSelectedCase() {
                 let totalUc = currentCasePriceUc * selectedCount;
                 let totalAim = (totalUc / 60) * 100;
@@ -490,33 +482,57 @@ async def index():
                 balanceAim -= totalAim;
                 updateUI();
 
+                let containerBox = document.getElementById('roulettes-container-box');
+                containerBox.innerHTML = '';
                 document.getElementById('roulette-section').style.display = 'block';
+                document.getElementById('win-result').innerText = "";
+
                 let res = await fetch('/open/' + currentCaseId, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                     body: `count=${selectedCount}`
                 });
                 let data = await res.json();
-                let track = document.getElementById('track');
-                let itemsHtml = '';
-                for(let i = 0; i < 40; i++) {
-                    let item = (i === 30) ? data.win_items[0] : data.random_items[i % data.random_items.length];
-                    itemsHtml += `<div class="roulette-item"><img src="${item.img}"><span>${item.val} UC</span></div>`;
+
+                let tracks = [];
+                for(let i = 0; i < selectedCount; i++) {
+                    let winObj = data.results[i].win_item;
+                    let randArr = data.results[i].random_items;
+                    
+                    let winWindow = document.createElement('div');
+                    winWindow.className = 'roulette-track-window';
+                    winWindow.innerHTML = `
+                        <div class="roulette-pointer"></div>
+                        <div class="roulette-track" id="track-${i}"></div>
+                    `;
+                    containerBox.appendChild(winWindow);
+
+                    let track = document.getElementById(`track-${i}`);
+                    let itemsHtml = '';
+                    for(let j = 0; j < 40; j++) {
+                        let item = (j === 30) ? winObj : randArr[j % randArr.length];
+                        itemsHtml += `<div class="roulette-item"><img src="${item.img}"><span>${item.val} UC</span></div>`;
+                    }
+                    track.innerHTML = itemsHtml;
+                    tracks.push(track);
                 }
-                track.innerHTML = itemsHtml;
+
                 setTimeout(() => {
-                    track.style.transition = 'transform 4s cubic-bezier(0.08, 0.82, 0.17, 1)';
-                    track.style.transform = `translateX(-${(30 * 122) - 200}px)`;
+                    tracks.forEach(track => {
+                        track.style.transition = 'transform 4s cubic-bezier(0.08, 0.82, 0.17, 1)';
+                        track.style.transform = `translateX(-${(30 * 108) - 160}px)`;
+                    });
                 }, 50);
+
                 setTimeout(() => {
-                    let totalWonUc = data.win_items.reduce((s, i) => s + i.val, 0);
+                    let totalWonUc = data.results.reduce((s, r) => s + r.win_item.val, 0);
                     balanceAim += (totalWonUc / 60) * 100;
                     updateUI();
-                    document.getElementById('win-result').innerText = `🎉 Yutdingiz: ${totalWonUc.toFixed(1)} UC`;
+                    document.getElementById('win-result').innerText = `🎉 Barchasi ochildi! Jami yutuq: ${totalWonUc.toFixed(1)} UC`;
                 }, 4100);
             }
 
-            // MINI GAMES LOGIC
+            // MINI GAMES
             function switchGame(game, btn) {
                 document.querySelectorAll('.sub-game').forEach(el => el.style.display = 'none');
                 document.querySelectorAll('.game-tab-btn').forEach(b => b.classList.remove('active'));
@@ -524,7 +540,6 @@ async def index():
                 btn.classList.add('active');
             }
 
-            // Mines Setup
             let minesBoard = document.getElementById('mines-board');
             for(let i=0; i<25; i++) {
                 let cell = document.createElement('button');
@@ -546,7 +561,6 @@ async def index():
                 });
             }
 
-            // Tower Setup
             let towerBoard = document.getElementById('tower-board');
             for(let i=0; i<4; i++) {
                 let row = document.createElement('div');
@@ -566,7 +580,6 @@ async def index():
                 alert("Tower boshlandi! Qatorni tanlang.");
             }
 
-            // Crash Setup
             function startCrash() {
                 let bet = parseFloat(document.getElementById('crash-bet').value) || 10;
                 if(balanceAim < bet) { alert("Aim yetarli emas!"); return; }
@@ -593,18 +606,23 @@ async def index():
             }
             async function confirmPayment() {
                 let uc = parseFloat(document.getElementById('uc-topup').value) || 60;
+                let promo = document.getElementById('wallet-promo-input').value.trim();
                 let res = await fetch('/topup_webhook', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: `uc=${uc}&user_id=${userId}`
+                    body: `uc=${uc}&user_id=${userId}&promo=${encodeURIComponent(promo)}`
                 });
                 let data = await res.json();
                 if(data.success) {
                     balanceAim = data.new_aim; updateUI();
-                    alert("To'lov bajarildi!");
+                    alert(data.msg);
                     document.getElementById('wallet-step-2').style.display = 'none';
                     document.getElementById('wallet-step-1').style.display = 'block';
                     switchTab('cases', document.querySelectorAll('.bottom-nav button')[0]);
+                } else {
+                    alert(data.msg);
+                    document.getElementById('wallet-step-2').style.display = 'none';
+                    document.getElementById('wallet-step-1').style.display = 'block';
                 }
             }
             async function activatePromo() {
@@ -639,23 +657,50 @@ async def open_case(case_id: str, count: int = Form(1)):
     case = CASES[case_id]
     items = case["items"]
     chances = [item["chance"] for item in items]
-    win_items = [random.choices(items, weights=chances, k=1)[0] for _ in range(count)]
-    random_items = [random.choice(items) for _ in range(15)]
-    return {"win_items": win_items, "random_items": random_items}
+    
+    results = []
+    for _ in range(count):
+        win_item = random.choices(items, weights=chances, k=1)[0]
+        random_items = [random.choice(items) for _ in range(15)]
+        results.append({"win_item": win_item, "random_items": random_items})
+        
+    return {"results": results}
 
 @app.post("/topup_webhook")
-async def topup_webhook(uc: float = Form(...), user_id: int = Form(...)):
+async def topup_webhook(uc: float = Form(...), user_id: int = Form(...), promo: str = Form("")):
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        aim_add = (uc / 60) * 100
+        final_uc = uc
+        bonus_msg = ""
+        
+        if promo:
+            cursor.execute("SELECT reward, max_uses, used_count, owner_id FROM promos WHERE code = ?", (promo.upper(),))
+            p_data = cursor.fetchone()
+            if p_data:
+                reward, max_uses, used_count, owner_id = p_data
+                if used_count < max_uses:
+                    cursor.execute("UPDATE promos SET used_count = used_count + 1 WHERE code = ?", (promo.upper(),))
+                    final_uc = uc * 1.20  # 20% qo'shib berish
+                    bonus_msg = " +20% hamkor promokod bonusi bilan!"
+                    if owner_id and owner_id != user_id:
+                        partner_bonus = uc * 0.20
+                        cursor.execute("UPDATE users SET partner_earned = partner_earned + ? WHERE user_id = ?", (partner_bonus, owner_id))
+                else:
+                    conn.close()
+                    return {"success": False, "msg": "Promokod muddati tugagan!"}
+            else:
+                conn.close()
+                return {"success": False, "msg": "Bunday promokod topilmadi!"}
+
+        aim_add = (final_uc / 60) * 100
         cursor.execute("UPDATE users SET aimcoin = aimcoin + ?, total_donated = total_donated + ? WHERE user_id = ?", (aim_add, uc, user_id))
         cursor.execute("SELECT aimcoin FROM users WHERE user_id = ?", (user_id,))
         new_aim = cursor.fetchone()[0]
         conn.commit()
     finally:
         conn.close()
-    return {"success": True, "new_aim": new_aim}
+    return {"success": True, "new_aim": new_aim, "msg": f"To'lov bajarildi!{bonus_msg}"}
 
 @app.post("/activate_promo")
 async def activate_promo(code: str = Form(...), user_id: int = Form(...)):
