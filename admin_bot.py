@@ -1,152 +1,68 @@
-import logging
+import telebot
+from telebot import types
 import sqlite3
-import re
-from aiogram import Bot, Dispatcher, types, F
-from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.fsm.storage.memory import MemoryStorage
 
-TOKEN = "8253855521:AAFOe4JqhgJ6halmuqz60EcK4il7BswhfAQ"
+TOKEN = "TOKENINGizni_SHU_YERGA_YOZING"
+bot = telebot.TeleBot(TOKEN)
+ADMIN_ID = 123456789 # O'z Telegram ID ingizni yozing
 
-bot = Bot(token=TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(storage=storage)
+def db_conn():
+    return sqlite3.connect('pubg_ecosystem.db', check_same_thread=False)
 
-logging.basicConfig(level=logging.INFO)
-
-def init_db():
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT,
-            balance REAL DEFAULT 0.01,
-            is_partner INTEGER DEFAULT 0,
-            partner_code TEXT,
-            partner_earned REAL DEFAULT 0.0,
-            aimcoin REAL DEFAULT 100.0,
-            total_donated REAL DEFAULT 0.0
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS promos (
-            code TEXT PRIMARY KEY,
-            reward REAL,
-            is_partner INTEGER DEFAULT 0,
-            max_uses INTEGER DEFAULT 10,
-            used_count INTEGER DEFAULT 0
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-init_db()
-
-class PromoState(StatesGroup):
-    waiting_for_code = State()
-    waiting_for_reward = State()
-    waiting_for_limit = State()
-
-@dp.message(Command("start"))
-async def cmd_start(message: types.Message):
-    kb = [
-        [types.KeyboardButton(text="🎁 Promokod yaratish"), types.KeyboardButton(text="🤝 Hamkorlar statistikasi")]
-    ]
-    keyboard = types.ReplyKeyboardMarkup(keyboard=kb, resize_keyboard=True)
-    await message.answer("⚡ **Bulldrop Admin Paneliga xush kelibsiz!**", reply_markup=keyboard, parse_mode="Markdown")
-
-# --- HAMKORLAR STATISTIKASI (Qancha pul kelgani ko'rinib turadi) ---
-@dp.message(F.text == "🤝 Hamkorlar statistikasi")
-async def partner_stats(message: types.Message):
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT username, partner_code, partner_earned FROM users WHERE is_partner = 1")
-    partners = cursor.fetchall()
-    conn.close()
-
-    if not partners:
-        await message.answer("❌ Hozircha hamkorlar mavjud emas.")
-        return
-
-    text = "📊 **Hamkorlar 20% promokod statistikasi:**\n\n"
-    for p in partners:
-        text += f"👤 Username: @{p[0] or 'Nomaʼlum'}\n🏷 Kod: `{p[1]}`\n💰 Kelgan foyda: **{p[2]} 🪙**\n-------------------\n"
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    user_id = message.from_user.id
+    username = message.from_user.username
     
-    await message.answer(text, parse_mode="Markdown")
-
-# --- PROMOKOD YARATISH (LIMIT VA 20% HAMKOR BILAN) ---
-@dp.message(F.text == "🎁 Promokod yaratish")
-async def create_promo(message: types.Message, state: FSMContext):
-    await message.answer("Yangi promokod nomini kiriting (Agar hamkor uchun bo'lsa, xohlagancha ishlatiladi):")
-    await state.set_state(PromoState.waiting_for_code)
-
-@dp.message(PromoState.waiting_for_code)
-async def get_code(message: types.Message, state: FSMContext):
-    await state.update_data(code=message.text.strip().upper())
-    await message.answer("Promokod qancha mukofot berishini yozing (masalan: `20`):")
-    await state.set_state(PromoState.waiting_for_reward)
-
-@dp.message(PromoState.waiting_for_reward)
-async def get_reward(message: types.Message, state: FSMContext):
-    try:
-        reward = float(message.text.strip())
-        await state.update_data(reward=reward)
-        await message.answer("Bu oddiy keys promokodimi yoki 20% li hamkor promokodimi?\n1 - Oddiy (Limitli)\n2 - 20% Hamkor (Cheksiz)")
-        await state.set_state(PromoState.waiting_for_limit)
-    except ValueError:
-        await message.answer("❌ Faqat raqam kiriting:")
-
-@dp.message(PromoState.waiting_for_limit)
-async def get_limit(message: types.Message, state: FSMContext):
-    choice = message.text.strip()
-    data = await state.get_data()
-    code = data['code']
-    reward = data['reward']
-
-    conn = sqlite3.connect("database.db")
+    conn = db_conn()
     cursor = conn.cursor()
-
-    if choice == "2":
-        cursor.execute("INSERT OR REPLACE INTO promos (code, reward, is_partner, max_uses) VALUES (?, ?, 1, 999999)", (code, reward))
-        cursor.execute("UPDATE users SET is_partner = 1, partner_code = ? WHERE user_id = ?", (code, message.from_user.id))
-        conn.commit()
-        conn.close()
-        await message.answer(f"✅ **20% Hamkor promokodi yaratildi!**\n🏷 Kod: `{code}`", parse_mode="Markdown")
-    else:
-        cursor.execute("INSERT OR REPLACE INTO promos (code, reward, is_partner, max_uses) VALUES (?, ?, 0, 10)", (code, reward))
-        conn.commit()
-        conn.close()
-        await message.answer(f"✅ **Oddiy keys promokodi yaratildi!** (Limit: 10 ta)\n🏷 Kod: `{code}`", parse_mode="Markdown")
-
-    await state.clear()
-
-# --- CARD XABARBOT SMS'LARINI AVTOMAT O'QISH VA BALANSNI TO'LDIRISH ---
-@dp.message(F.text)
-async def catch_card_sms(message: types.Message):
-    text = message.text or ""
+    cursor.execute("SELECT * FROM users WHERE telegram_id = ?", (str(user_id),))
+    user = cursor.fetchone()
     
-    # Xabarda UZS yoki so'm borligini va to'lov kelganini tekshiramiz
-    if "UZS" in text or "so'm" in text:
-        clean_text = text.replace(',', '').replace(' ', '')
-        numbers = re.findall(r'\d+', clean_text)
+    if not user:
+        cursor.execute("INSERT INTO users (telegram_id, username, balance) VALUES (?, ?, ?)", (str(user_id), username, 0.0))
+        conn.commit()
+    conn.close()
+    
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    markup.add(types.KeyboardButton("🎮 O'yinga o'tish"), types.KeyboardButton("💼 Inventar va Balans"))
+    markup.add(types.KeyboardButton("🎁 Promo-kod ishlatish"), types.KeyboardButton("🤝 Hamkorlik (Partner)"))
+    
+    if user_id == ADMIN_ID:
+        markup.add(types.KeyboardButton("👑 Admin Panel"))
         
-        if numbers:
-            sum_amount = float(numbers[0])
-            uc_amount = (sum_amount / 14000) * 60
-            aim_add = (uc_amount / 60) * 100
-            
-            conn = sqlite3.connect("database.db")
-            cursor = conn.cursor()
-            # user_id = 1 ni bazada yangilaymiz (yoki kerakli foydalanuvchi)
-            cursor.execute("UPDATE users SET aimcoin = aimcoin + ?, total_donated = total_donated + ? WHERE user_id = 1", (aim_add, uc_amount))
-            conn.commit()
-            conn.close()
-            
-            await message.reply(f"✅ **To'lov muvaffaqiyatli topildi!**\n\nSumma: {sum_amount} so'm\nHisobga qo'shildi: {uc_amount:.1f} UC ({aim_add} AimCoin)")
+    bot.send_message(message.chat.id, "Xush kelibsiz! PUBG Case va Ecosystem botiga marhamat.", reply_markup=markup)
 
-if __name__ == "__main__":
-    import asyncio
-    print("Admin bot ishga tushdi...")
-    asyncio.run(dp.start_polling(bot))
+@bot.message_handler(text=["👑 Admin Panel"])
+def admin_panel(message):
+    if message.from_user.id != ADMIN_ID:
+        return
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("➕ Promo-kod qo'shish", callback_data="add_promo"))
+    markup.add(types.InlineKeyboardButton("📊 Statistika", callback_data="stats"))
+    bot.send_message(message.chat.id, "Admin paneliga xush kelibsiz:", reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data == "add_promo")
+def callback_add_promo(call):
+    msg = bot.send_message(call.message.chat.id, "Yangi promo-kod va bonusni quyidagi formatda yuboring:\n`KOD BONUS IS_FREE_CASE(0 yoki 1)`", parse_mode="Markdown")
+    bot.register_next_step_handler(msg, save_promo_step)
+
+def save_promo_step(message):
+    try:
+        parts = message.text.split()
+        code = parts[0]
+        bonus = float(parts[1])
+        is_free = int(parts[2])
+        
+        conn = db_conn()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO promo_codes (code, bonus, is_free_case) VALUES (?, ?, ?)", (code, bonus, is_free))
+        conn.commit()
+        conn.close()
+        
+        bot.send_message(message.chat.id, "✅ Promo-kod muvaffaqiyatli qo'shildi!")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"❌ Xatolik yuz berdi: {e}")
+
+if __name__ == '__main__':
+    bot.polling(none_stop=True)
