@@ -14,11 +14,18 @@
         .btn-custom { background: linear-gradient(45deg, #f39c12, #e67e22); color: white; font-weight: bold; border: none; }
         .btn-custom:hover { background: linear-gradient(45deg, #e67e22, #d35400); color: white; }
         .ticker-wrap { background: #131823; border-bottom: 1px solid #1f293d; color: #f39c12; padding: 8px 0; font-size: 14px; white-space: nowrap; overflow: hidden; }
+        
+        /* Roulette animation styles */
+        .roulette-container { display: flex; overflow: hidden; width: 100%; background: #0b0f19; border: 2px solid #f39c12; border-radius: 10px; padding: 10px; position: relative; justify-content: center; }
+        .roulette-track { display: flex; transition: transform 4s cubic-bezier(0.15, 0.85, 0.35, 1); }
+        .roulette-item { min-width: 130px; height: 140px; background: #1f293d; margin: 0 5px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #2c3e50; }
+        .roulette-item img { width: 60px; height: 60px; object-fit: contain; margin-bottom: 5px; }
+        .pointer { position: absolute; width: 4px; height: 100%; background: #ff4757; top: 0; z-index: 10; box-shadow: 0 0 10px #ff4757; }
     </style>
 </head>
 <body>
     <div class="ticker-wrap">
-        <marquee scrollamount="5">🔥 So'nggi yutuqlar: <b>User_777</b> <span class="text-success">Glacier M416 (850 UC)</span> yutib oldi! | <b>Jaxon_VIP</b> <span class="text-success">Pharaoh X-Suit</span> yutdi! | <b>PUBG_King</b> <span class="text-success">500 UC</span> yechib oldi!</marquee>
+        <marquee scrollamount="5">🔥 So'nggi yutuqlar: <b>User_777</b> <span class="text-success">Glacier M416 (850 UC)</span> yutib oldi! | <b>Jaxon_VIP</b> <span class="text-success">Pharaoh X-Suit</span> yutdi!</marquee>
     </div>
 
     <nav class="navbar navbar-expand-lg navbar-dark px-4">
@@ -58,7 +65,7 @@
             </div>
         </div>
 
-        <!-- 20 TA CASE -->
+        <!-- CASES -->
         <h2 class="mb-3 text-warning">PUBG Premium Caselar (20 ta to'plam)</h2>
         <div class="row">
             {% for key, case in cases.items() %}
@@ -67,10 +74,32 @@
                     <img src="{{ case.img }}" class="mx-auto mb-3" style="width: 80px; height: 80px; object-fit: contain;">
                     <h5>{{ case.name }}</h5>
                     <p class="text-success fw-bold">{{ case.price }} UC</p>
-                    <button class="btn btn-custom btn-sm mt-auto" onclick="openCase('{{ key }}')">Case Ochish</button>
+                    <div class="d-flex justify-content-center gap-2 mt-auto">
+                        <button class="btn btn-custom btn-sm w-50" onclick="openCase('{{ key }}', 1)">1x Ochish</button>
+                        <button class="btn btn-warning btn-sm w-50 fw-bold" onclick="openCase('{{ key }}', 5)">5x Ochish</button>
+                    </div>
                 </div>
             </div>
             {% endfor %}
+        </div>
+    </div>
+
+    <!-- ANIMATSIYA MODALI -->
+    <div class="modal fade" id="openingModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-dark text-white border-warning">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title text-warning">Case ochilmoqda... 🎲</h5>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="roulette-container mb-3">
+                        <div class="pointer"></div>
+                        <div class="roulette-track" id="rouletteTrack"></div>
+                    </div>
+                    <h4 id="resultText" class="text-success mt-3"></h4>
+                    <button type="button" class="btn btn-custom mt-3 d-none" id="closeModalBtn" data-bs-dismiss="modal" onclick="location.reload()">Ajoyib!</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -87,7 +116,6 @@
                         <b>To'ldirish tartibi:</b> Karta raqamiga pul o'tkazing va chekni yuboring.<br>
                         💳 Karta: <code class="fs-5 text-dark bg-light px-2 rounded">5614 6865 0763 1458</code>
                     </div>
-                    
                     <h5>Balansni To'ldirish (Chek yuklash)</h5>
                     <form onsubmit="submitTopup(event)">
                         <div class="mb-3">
@@ -100,7 +128,6 @@
                         </div>
                         <button type="submit" class="btn btn-success w-100">Adminga Yuborish</button>
                     </form>
-                    
                     <hr class="my-4">
                     <h5>UC Yechish (PUBG ID)</h5>
                     <div class="input-group mb-3">
@@ -123,10 +150,53 @@
         }
         setInterval(updateCrash, 200);
 
-        function openCase(caseId) {
-            fetch('/api/open_case/' + caseId, { method: 'POST' }).then(res => res.json()).then(data => {
-                if(data.success) { alert('Tabriklaymiz! Tushdi: ' + data.item.name + ' (' + data.item.price + ' UC)'); location.reload(); }
-                else { alert(data.msg); }
+        function openCase(caseId, count) {
+            fetch('/api/open_case/' + caseId + '/' + count, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if(!data.success) {
+                    alert(data.msg);
+                    return;
+                }
+                
+                let modal = new bootstrap.Modal(document.getElementById('openingModal'));
+                modal.show();
+                
+                let track = document.getElementById('rouletteTrack');
+                track.style.transition = 'none';
+                track.style.transform = 'translateX(0px)';
+                track.innerHTML = '';
+                document.getElementById('resultText').innerText = '';
+                document.getElementById('closeModalBtn').classList.add('d-none');
+                
+                // Ruletka elementlarini to'ldirish
+                let itemsList = data.all_items;
+                let html = '';
+                for(let i = 0; i < 30; i++) {
+                    let randItem = itemsList[Math.floor(Math.random() * itemsList.length)];
+                    html += `<div class="roulette-item"><img src="${randItem.img}"><small class="text-truncate w-100 px-1">${randItem.name}</small></div>`;
+                }
+                // Yutgan narsani aniq joylash
+                let winningItem = data.won_items[0];
+                html += `<div class="roulette-item border-warning bg-secondary"><img src="${winningItem.img}"><small class="text-truncate w-100 px-1 text-warning fw-bold">${winningItem.name}</small></div>`;
+                
+                for(let i = 0; i < 10; i++) {
+                    let randItem = itemsList[Math.floor(Math.random() * itemsList.length)];
+                    html += `<div class="roulette-item"><img src="${randItem.img}"><small class="text-truncate w-100 px-1">${randItem.name}</small></div>`;
+                }
+                track.innerHTML = html;
+                
+                setTimeout(() => {
+                    track.style.transition = 'transform 4s cubic-bezier(0.15, 0.85, 0.35, 1)';
+                    track.style.transform = 'translateX(-2250px)';
+                }, 100);
+                
+                setTimeout(() => {
+                    let text = "Tabriklaymiz! Yutdingiz:\n";
+                    data.won_items.forEach(it => { text += `✨ ${it.name} (${it.price} UC)\n`; });
+                    document.getElementById('resultText').innerText = text;
+                    document.getElementById('closeModalBtn').classList.remove('d-none');
+                }, 4200);
             });
         }
 
