@@ -1,72 +1,58 @@
 import sqlite3
 
 def init_db():
-    conn = sqlite3.connect("bot_database.db")
+    conn = sqlite3.connect('pubg_ecosystem.db', check_same_thread=False)
     cursor = conn.cursor()
     
     # Foydalanuvchilar jadvali
-    cursor.execute("""
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            telegram_id TEXT UNIQUE,
             username TEXT,
-            site_id TEXT,
-            balance REAL DEFAULT 0,
-            status TEXT DEFAULT 'pending' -- pending, approved, blocked
-        )
-    """)
-    
-    # Adminlar jadvali
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS admins (
-            user_id INTEGER PRIMARY KEY
-        )
-    """)
-    
-    # Kunlik olingan coinlar (limit uchun)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS daily_limits (
-            user_id INTEGER,
-            amount REAL,
-            date TEXT
-        )
-    """)
-    
-    # Promokodlar jadvali
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS promos (
-            code TEXT PRIMARY KEY,
-            promo_type TEXT, -- '20_percent' yoki 'normal'
-            max_activations INTEGER,
-            current_activations INTEGER DEFAULT 0
-        )
-    """)
-    
-    # Depozitlar (20% promo statistikasi uchun)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS deposits (
-            user_id INTEGER,
-            amount REAL,
-            promo_code TEXT,
+            balance REAL DEFAULT 0.0,
+            demo_balance REAL DEFAULT 1000.0,
+            is_partner INTEGER DEFAULT 0,
+            referrer_id INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """)
+    ''')
     
-    # Case buyumlari
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS case_items (
+    # Inventar jadvali
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS inventory (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT,
-            price REAL
+            user_id INTEGER,
+            item_name TEXT,
+            item_image TEXT,
+            item_price REAL,
+            status TEXT DEFAULT 'inventory' -- 'inventory' yoki 'sold'
         )
-    """)
+    ''')
+    
+    # Promo-kodlar jadvali
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS promo_codes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT UNIQUE,
+            bonus REAL,
+            is_free_case INTEGER DEFAULT 0,
+            partner_id INTEGER,
+            uses_count INTEGER DEFAULT 0
+        )
+    ''')
+    
+    # Promo ishlatganlar tarixi (24 soatlik cheklov uchun)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS promo_history (
+            user_id INTEGER,
+            promo_id INTEGER,
+            used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
     
     conn.commit()
     conn.close()
 
-# Boshlang'ich adminni qo'shish (O'z Telegram IDingizni yozing)
-def add_super_admin(admin_id: int):
-    conn = sqlite3.connect("bot_database.db")
-    cursor = conn.cursor()
-    cursor.execute("INSERT OR IGNORE INTO admins (user_id) VALUES (?)", (admin_id,))
-    conn.commit()
-    conn.close()
+if __name__ == '__main__':
+    init_db()
