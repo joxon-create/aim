@@ -101,7 +101,7 @@ async def cmd_start(message: types.Message):
     )
 
     await message.answer(
-        f"🔥 **AIMDROP** rasmiy botiga xush kelibsiz!\n"
+        f"🔥 **BULLDROP** rasmiy botiga xush kelibsiz!\n"
         f"Sizning Telegram ID raqamingiz: `{user_id}`\n\n"
         f"Pastdagi tugmalar orqali Aim balans so'rashingiz va Web App orqali keyslar ochishingiz mumkin.",
         reply_markup=keyboard,
@@ -157,7 +157,7 @@ async def my_stats(message: types.Message):
         aim = user["aimcoin"]
         uc = (aim / 100) * 60
         earned = user["partner_earned"]
-        await message.answer(f"📊 **AimProfilingiz:**\n\n💎 AimCoin: {aim:.2f} Aim\n💰 UC Ekvivalenti: {uc:.1f} UC\n🤝 Aim Hamkorlikdan topilgan: {earned} Aim")
+        await message.answer(f"📊 **AimProfilingiz:**\n\n💎 AimCoin: {aim:.2f} Aim\n💰 UC Ekvivalenti: {uc:.1f} UC\n🤝 Hamkorlikdan topilgan: {earned} Aim")
 
 @dp.callback_query(F.data.startswith("approve_demo_"))
 async def approve_demo(callback: types.CallbackQuery):
@@ -200,29 +200,29 @@ async def startup_event():
             
     asyncio.create_task(run_telegram_bot())
 
-# --- AIMDROP CASES & ITEMS ---
-AIMDROP_ITEMS_POOL = [
-    {"name": "AimDrop M416 'Glacier'", "val": 2800, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 0.05},
-    {"name": "AimDrop AWM 'The Fool'", "val": 2500, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 0.1},
-    {"name": "AimDrop Pan 'BFC'", "val": 450, "img": "https://cdn-icons-png.flaticon.com/512/1046/1046857.png", "chance": 2.0},
-    {"name": "Aim Helmet Lv.3", "val": 350, "img": "https://cdn-icons-png.flaticon.com/512/807/807281.png", "chance": 5.0},
-    {"name": "Aim Silver Fragment", "val": 15, "img": "https://cdn-icons-png.flaticon.com/512/217/217853.png", "chance": 92.85},
+# --- BULLDROP CASES & ITEMS ---
+BULLDROP_ITEMS_POOL = [
+    {"name": "Bulldrop M416 'Glacier'", "val": 2800, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 0.05},
+    {"name": "Bulldrop AWM 'The Fool'", "val": 2500, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 0.1},
+    {"name": "Bulldrop Pan 'BFC'", "val": 450, "img": "https://cdn-icons-png.flaticon.com/512/1046/1046857.png", "chance": 2.0},
+    {"name": "Bull Helmet Lv.3", "val": 350, "img": "https://cdn-icons-png.flaticon.com/512/807/807281.png", "chance": 5.0},
+    {"name": "Bull Silver Fragment", "val": 15, "img": "https://cdn-icons-png.flaticon.com/512/217/217853.png", "chance": 92.85},
 ]
 
 CASES = {}
 for i in range(1, 21):
     price_uc = 10 if i == 1 else round(10 + (290 / 19) * (i - 1), 1)
     price_aim = (price_uc / 60) * 100
-    items = [dict(item, val=round(price_aim * random.uniform(0.3, 2.5), 1)) for item in AIMDROP_ITEMS_POOL]
+    items = [dict(item, val=round(price_aim * random.uniform(0.3, 2.5), 1)) for item in BULLDROP_ITEMS_POOL]
     CASES[f"case_{i}"] = {
-        "name": f"AimDrop Case #{i}",
+        "name": f"Bulldrop Case #{i}",
         "price_uc": price_uc,
         "price_aim": round(price_aim, 2),
         "img": "https://cdn-icons-png.flaticon.com/512/3313/3313498.png",
         "items": items
     }
 
-# --- FASTAPI WEB APP (PREMIUM UI/UX) ---
+# --- FASTAPI WEB APP (BULLDROP DESIGN SYSTEM) ---
 @app.get("/", response_class=HTMLResponse)
 async def index():
     return HTMLResponse(content="""
@@ -231,101 +231,109 @@ async def index():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AIMDROP - Ultimate Cyber Gaming</title>
+        <title>BULLDROP - Cyber Gaming Ecosystem</title>
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
         <style>
             :root {
-                --bg-main: #07090e;
-                --bg-card: rgba(18, 24, 38, 0.7);
-                --accent-gold: #f59e0b;
-                --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
-                --text-main: #f8fafc;
-                --text-muted: #94a3b8;
-                --border-color: rgba(255, 255, 255, 0.08);
+                --bg-main: #090a0f;
+                --bg-card: #131722;
+                --bg-card-hover: #1a1f2e;
+                --accent-purple: #8b5cf6;
+                --accent-pink: #ec4899;
+                --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+                --accent-gold: #fbbf24;
+                --text-main: #ffffff;
+                --text-muted: #64748b;
+                --border-color: rgba(255, 255, 255, 0.06);
             }
             * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-            body { background: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; background-image: radial-gradient(circle at 50% 0%, #1e1b4b 0%, transparent 50%); }
+            body { background: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; background-image: radial-gradient(circle at 50% -20%, #2e1065 0%, transparent 50%); }
             
-            header { display: flex; justify-content: space-between; align-items: center; background: rgba(7, 9, 14, 0.85); backdrop-filter: blur(20px); padding: 14px 20px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; }
+            header { display: flex; justify-content: space-between; align-items: center; background: rgba(9, 10, 15, 0.9); backdrop-filter: blur(20px); padding: 14px 20px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; }
             .logo { font-size: 22px; font-weight: 800; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.5px; }
-            .balance-container { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 8px 16px; border-radius: 40px; font-weight: 700; color: #fbbf24; font-size: 13px; box-shadow: 0 0 20px rgba(245, 158, 11, 0.15); display: flex; align-items: center; gap: 6px; }
+            .balance-container { background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); padding: 8px 16px; border-radius: 40px; font-weight: 700; color: #a78bfa; font-size: 13px; box-shadow: 0 0 20px rgba(139, 92, 246, 0.15); display: flex; align-items: center; gap: 6px; }
 
             .container { max-width: 1200px; margin: 0 auto; width: 100%; padding: 20px; flex: 1; padding-bottom: 110px; }
             .tab-content { display: none; animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
             .tab-content.active { display: block; }
             @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-            .section-title { font-size: 20px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+            .section-title { font-size: 20px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: #f1f5f9; }
             .cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 16px; }
             .case-card { background: var(--bg-card); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px 12px; text-align: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 30px rgba(0,0,0,0.4); position: relative; overflow: hidden; }
             .case-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--accent-gradient); opacity: 0; transition: 0.3s; }
-            .case-card:hover { transform: translateY(-5px); border-color: rgba(245, 158, 11, 0.4); box-shadow: 0 15px 35px rgba(245, 158, 11, 0.15); }
+            .case-card:hover { transform: translateY(-5px); background: var(--bg-card-hover); border-color: rgba(139, 92, 246, 0.4); box-shadow: 0 15px 35px rgba(139, 92, 246, 0.15); }
             .case-card:hover::before { opacity: 1; }
             .case-img { width: 75px; height: 75px; object-fit: contain; margin: 10px auto; filter: drop-shadow(0 12px 12px rgba(0,0,0,0.6)); transition: 0.3s; }
             .case-card:hover .case-img { transform: scale(1.08); }
-            .btn-open { background: var(--accent-gradient); color: #fff; border: none; padding: 10px; width: 100%; border-radius: 12px; font-weight: 700; margin-top: 12px; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); font-size: 12px; transition: 0.2s; }
+            .btn-open { background: var(--accent-gradient); color: #fff; border: none; padding: 10px; width: 100%; border-radius: 12px; font-weight: 700; margin-top: 12px; cursor: pointer; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); font-size: 12px; transition: 0.2s; }
             .btn-open:active { transform: scale(0.96); }
 
             .case-view { background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 24px; padding: 25px; text-align: center; max-width: 600px; margin: 0 auto; box-shadow: 0 25px 50px rgba(0,0,0,0.7); }
             .multi-select { display: flex; justify-content: center; gap: 8px; margin: 15px 0; flex-wrap: wrap; }
-            .count-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; transition: 0.2s; }
-            .count-btn.active { background: var(--accent-gold); color: #07090e; border-color: var(--accent-gold); box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+            .count-btn { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; transition: 0.2s; }
+            .count-btn.active { background: var(--accent-purple); color: #fff; border-color: var(--accent-purple); box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
 
             .roulettes-container { display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; margin: 15px 0; padding-right: 4px; }
-            .roulette-track-window { width: 100%; overflow: hidden; position: relative; height: 110px; background: #030508; border-radius: 14px; border: 1px solid var(--border-color); flex-shrink: 0; }
-            .roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #ef4444; transform: translateX(-50%); z-index: 10; box-shadow: 0 0 12px #ef4444; }
+            .roulette-track-window { width: 100%; overflow: hidden; position: relative; height: 110px; background: #05070a; border-radius: 14px; border: 1px solid var(--border-color); flex-shrink: 0; }
+            .roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: var(--accent-pink); transform: translateX(-50%); z-index: 10; box-shadow: 0 0 12px var(--accent-pink); }
             .roulette-track { display: flex; position: absolute; left: 0; top: 6px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }
-            .roulette-item { min-width: 98px; height: 96px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 5px; font-size: 11px; padding: 4px; }
+            .roulette-item { min-width: 98px; height: 96px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 5px; font-size: 11px; padding: 4px; }
             .roulette-item img { width: 45px; height: 45px; object-fit: contain; margin-bottom: 4px; }
 
-            .inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-top: 15px; max-height: 450px; overflow-y: auto; padding-right: 4px; }
+            /* Case Win Dialog Actions */
+            .win-actions-container { display: flex; gap: 10px; margin-top: 15px; justify-content: center; }
+            .btn-win-sell { background: #ef4444; color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; flex: 1; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
+            .btn-win-keep { background: #10b981; color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; flex: 1; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+
+            .inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 12px; margin-top: 15px; max-height: 450px; overflow-y: auto; padding-right: 4px; }
             .inv-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
             .inv-card img { width: 55px; height: 55px; object-fit: contain; margin-bottom: 6px; }
             .inv-actions { display: flex; gap: 6px; width: 100%; margin-top: 10px; }
-            .btn-sell { background: #ef4444; color: #fff; border: none; padding: 6px; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }
-            .btn-keep { background: #34d399; color: #07090e; border: none; padding: 6px; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }
+            .btn-inv-sell { background: #ef4444; color: #fff; border: none; padding: 6px; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }
+            .btn-inv-keep { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-color); padding: 6px; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }
 
             .game-panel { background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 24px; padding: 22px; max-width: 500px; margin: 0 auto; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
             .games-menu { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
-            .game-tab-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; flex: 1; }
-            .game-tab-btn.active { background: var(--accent-gold); color: #07090e; border-color: var(--accent-gold); }
+            .game-tab-btn { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; flex: 1; }
+            .game-tab-btn.active { background: var(--accent-purple); color: #fff; border-color: var(--accent-purple); }
 
             .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 15px 0; }
-            .mine-cell { aspect-ratio: 1; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 10px; font-size: 18px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-            .mine-cell:hover { background: rgba(255,255,255,0.08); }
+            .mine-cell { aspect-ratio: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 10px; font-size: 18px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+            .mine-cell:hover { background: rgba(255,255,255,0.06); }
 
             .tower-grid { display: flex; flex-direction: column-reverse; gap: 6px; margin: 15px 0; }
             .tower-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-            .tower-cell { background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); height: 42px; border-radius: 10px; cursor: pointer; font-weight: bold; color: #fff; }
+            .tower-cell { background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); height: 42px; border-radius: 10px; cursor: pointer; font-weight: bold; color: #fff; }
 
-            .crash-screen { height: 180px; background: #030508; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--border-color); margin: 15px 0; position: relative; overflow: hidden; }
-            .crash-multiplier { font-size: 38px; font-weight: 900; color: #34d399; text-shadow: 0 0 25px rgba(52, 211, 153, 0.4); }
+            .crash-screen { height: 180px; background: #05070a; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--border-color); margin: 15px 0; position: relative; overflow: hidden; }
+            .crash-multiplier { font-size: 38px; font-weight: 900; color: #10b981; text-shadow: 0 0 25px rgba(16, 185, 129, 0.4); }
 
             .panel { background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border-color); padding: 24px; border-radius: 24px; max-width: 440px; margin: 0 auto; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
             .form-group { margin-bottom: 16px; text-align: left; }
             .form-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 12px; font-weight: 700; }
-            .form-group input { width: 100%; padding: 14px; background: #030508; border: 1px solid var(--border-color); color: #fff; border-radius: 12px; font-size: 14px; text-align: center; outline: none; transition: 0.2s; }
-            .form-group input:focus { border-color: var(--accent-gold); box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
-            .btn-submit { background: var(--accent-gradient); color: #fff; border: none; padding: 14px; width: 100%; border-radius: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3); font-size: 14px; transition: 0.2s; }
+            .form-group input { width: 100%; padding: 14px; background: #05070a; border: 1px solid var(--border-color); color: #fff; border-radius: 12px; font-size: 14px; text-align: center; outline: none; transition: 0.2s; }
+            .form-group input:focus { border-color: var(--accent-purple); box-shadow: 0 0 10px rgba(139, 92, 246, 0.2); }
+            .btn-submit { background: var(--accent-gradient); color: #fff; border: none; padding: 14px; width: 100%; border-radius: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3); font-size: 14px; transition: 0.2s; }
             .btn-submit:active { transform: scale(0.98); }
 
-            .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(7, 9, 14, 0.9); backdrop-filter: blur(20px); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }
+            .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(9, 10, 15, 0.9); backdrop-filter: blur(20px); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }
             .nav-item { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 700; transition: 0.2s; }
-            .nav-item.active { color: #fbbf24; text-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+            .nav-item.active { color: #a78bfa; text-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
             .nav-item span.icon { font-size: 20px; }
         </style>
     </head>
     <body>
         <header>
-            <div class="logo">AIMDROP</div>
+            <div class="logo">BULLDROP</div>
             <div class="balance-container">💎 <span id="balance">100.00</span> Aim (<span id="uc-balance">60</span> UC)</div>
         </header>
 
         <div class="container">
             <!-- Cases Tab -->
             <div id="cases-tab" class="tab-content active">
-                <div class="section-title">📦 Premium AimDrop Keyslari</div>
+                <div class="section-title">📦 Bulldog Premium Keyslari</div>
                 <div class="cases-grid" id="cases-grid"></div>
             </div>
 
@@ -333,8 +341,8 @@ async def index():
             <div id="case-detail-tab" class="tab-content">
                 <div class="case-view">
                     <img id="detail-img" src="" style="width: 85px; height: 85px; object-fit: contain; margin-bottom: 8px;">
-                    <h2 id="detail-name" style="margin-bottom: 4px; font-size: 19px; font-weight: 800;">AimDrop Case</h2>
-                    <p style="color: #fbbf24; font-weight: 700; font-size: 15px;" id="detail-price-text">10 UC (16.67 Aim)</p>
+                    <h2 id="detail-name" style="margin-bottom: 4px; font-size: 19px; font-weight: 800;">Bulldrop Case</h2>
+                    <p style="color: #a78bfa; font-weight: 700; font-size: 15px;" id="detail-price-text">10 UC (16.67 Aim)</p>
                     
                     <p style="font-size: 12px; color: var(--text-muted); margin-top: 14px;">Ochish sonini tanlang:</p>
                     <div class="multi-select">
@@ -346,15 +354,18 @@ async def index():
                         <button class="count-btn" onclick="setCount(10, this)">10 ta</button>
                     </div>
 
-                    <p style="font-size: 13px; margin-bottom: 12px;">Umumiy qiymat: <span id="total-open-price" style="color: #fbbf24; font-weight: bold;">10</span> UC (<span id="total-open-aim" style="color: #34d399; font-weight: bold;">16.67</span> Aim)</p>
+                    <p style="font-size: 13px; margin-bottom: 12px;">Umumiy qiymat: <span id="total-open-price" style="color: #a78bfa; font-weight: bold;">10</span> UC (<span id="total-open-aim" style="color: #10b981; font-weight: bold;">16.67</span> Aim)</p>
                     
                     <div id="roulette-section" style="display: none;">
                         <div class="roulettes-container" id="roulettes-container-box"></div>
                     </div>
 
-                    <div id="win-result" style="font-size: 14px; font-weight: bold; color: #34d399; margin: 12px 0; min-height: 25px;"></div>
+                    <div id="win-result-container" style="display: none; margin-top: 12px;">
+                        <div id="win-result-text" style="font-size: 13px; font-weight: bold; color: #10b981; margin-bottom: 8px;"></div>
+                        <div class="win-actions-container" id="win-actions-box"></div>
+                    </div>
                     
-                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
                         <button class="btn-submit" onclick="openSelectedCase()" id="action-btn">Hozir Ochish</button>
                         <button class="count-btn" onclick="switchTab('cases', document.querySelectorAll('.bottom-nav button')[0])" style="flex:1; display:flex; align-items:center; justify-content:center;">Orqaga</button>
                     </div>
@@ -364,7 +375,7 @@ async def index():
             <!-- Inventory Tab -->
             <div id="inventory-tab" class="tab-content">
                 <div class="section-title">🎒 Mening Inventarim</div>
-                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Yutuqlaringizni sotib Aim balansga o'tkazing yoki inventarda saqlang.</p>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Yutuqlaringizni shu yerdan ham xohlagan vaqtda sotishingiz yoki saqlashingiz mumkin.</p>
                 <div class="inventory-grid" id="inventory-grid"></div>
             </div>
 
@@ -378,21 +389,21 @@ async def index():
                     </div>
 
                     <div id="game-mines" class="sub-game">
-                        <h3 style="margin-bottom: 12px; font-size: 16px;">Aim Mines O'yini</h3>
+                        <h3 style="margin-bottom: 12px; font-size: 16px;">Bulldrop Mines</h3>
                         <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="mines-bet" value="10"></div>
                         <div class="mines-grid" id="mines-board"></div>
                         <button class="btn-submit" onclick="startMines()">O'yinni Boshlash</button>
                     </div>
 
                     <div id="game-tower" class="sub-game" style="display: none;">
-                        <h3 style="margin-bottom: 12px; font-size: 16px;">Aim Tower O'yini</h3>
+                        <h3 style="margin-bottom: 12px; font-size: 16px;">Bulldrop Tower</h3>
                         <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="tower-bet" value="10"></div>
                         <div class="tower-grid" id="tower-board"></div>
                         <button class="btn-submit" onclick="startTower()">Qurishni Boshlash</button>
                     </div>
 
                     <div id="game-crash" class="sub-game" style="display: none;">
-                        <h3 style="margin-bottom: 12px; font-size: 16px;">Aim Crash O'yini</h3>
+                        <h3 style="margin-bottom: 12px; font-size: 16px;">Bulldrop Crash</h3>
                         <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="crash-bet" value="10"></div>
                         <div class="crash-screen">
                             <div class="crash-multiplier" id="crash-mult">1.00x</div>
@@ -402,14 +413,14 @@ async def index():
                 </div>
             </div>
 
-            <!-- Wallet Tab (To'ldirish + Promokod) -->
+            <!-- Wallet Tab -->
             <div id="wallet-tab" class="tab-content">
                 <div class="panel" id="wallet-step-1">
                     <h3 style="margin-bottom: 16px; font-size: 18px;">💳 Balansni To'ldirish</h3>
                     <div class="form-group"><label>Karta Raqami:</label><input type="text" id="card-input" placeholder="8600 0000 0000 0000"></div>
                     <div class="form-group"><label>UC Miqdori:</label><input type="number" id="uc-topup" value="60" oninput="calcSum()"></div>
-                    <div class="form-group"><label>🎁 Hamkor Promokodi (+20% Bonus):</label><input type="text" id="wallet-promo-input" placeholder="PROMOKOD (Ixtiyoriy)"></div>
-                    <p style="color: #fbbf24; margin-bottom: 16px; font-size: 14px; font-weight: 700;">Summa: <span id="sum-calc">14000</span> so'm</p>
+                    <div class="form-group"><label>🎁 Hamkor Promokodi (+20% Bonus):</label><input type="text" id="wallet-promo-input" placeholder="PROMOKOD"></div>
+                    <p style="color: #a78bfa; margin-bottom: 16px; font-size: 14px; font-weight: 700;">Summa: <span id="sum-calc">14000</span> so'm</p>
                     <button class="btn-submit" onclick="requestSMS()">SMS Kodni Olish</button>
                 </div>
                 <div class="panel" id="wallet-step-2" style="display: none;">
@@ -430,7 +441,7 @@ async def index():
                 <div class="panel">
                     <h3 style="margin-bottom: 10px; font-size: 18px;">🤝 Hamkorlik Dasturi</h3>
                     <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Sizning promokodingiz orqali tushgan daromad:</p>
-                    <p style="font-size: 16px; color: #34d399; font-weight: bold; margin-bottom: 14px;"><span id="partner-earned">0</span> Aim</p>
+                    <p style="font-size: 16px; color: #10b981; font-weight: bold; margin-bottom: 14px;"><span id="partner-earned">0</span> Aim</p>
                     <button class="btn-submit" onclick="loadPartnerStats()">Statistikani Yangilash</button>
                 </div>
             </div>
@@ -478,7 +489,7 @@ async def index():
                         <div class="case-card" onclick="selectCase('${id}', ${c.price_uc}, ${c.price_aim}, '${c.name}', '${c.img}')">
                             <img src="${c.img}" class="case-img">
                             <h4 style="font-size: 13px; font-weight: 700; margin-top:4px;">${c.name}</h4>
-                            <p style="color:#fbbf24; margin: 6px 0; font-weight: 800; font-size: 13px;">${c.price_uc} UC</p>
+                            <p style="color:#a78bfa; margin: 6px 0; font-weight: 800; font-size: 13px;">${c.price_uc} UC</p>
                             <button class="btn-open">Ochish</button>
                         </div>
                     `;
@@ -496,7 +507,7 @@ async def index():
                 document.getElementById('detail-name').innerText = name;
                 document.getElementById('detail-img').src = img;
                 document.getElementById('detail-price-text').innerText = `${priceUc} UC (${priceAim} Aim)`;
-                document.getElementById('win-result').innerText = "";
+                document.getElementById('win-result-container').style.display = 'none';
                 document.getElementById('roulette-section').style.display = 'none';
                 updateOpenCost();
                 switchTab('case-detail', null);
@@ -525,7 +536,7 @@ async def index():
                 let containerBox = document.getElementById('roulettes-container-box');
                 containerBox.innerHTML = '';
                 document.getElementById('roulette-section').style.display = 'block';
-                document.getElementById('win-result').innerText = "";
+                document.getElementById('win-result-container').style.display = 'none';
 
                 let res = await fetch(`/open/${currentCaseId}?user_id=${userId}`, {
                     method: 'POST',
@@ -565,8 +576,48 @@ async def index():
                 }, 50);
 
                 setTimeout(() => {
-                    document.getElementById('win-result').innerText = `🎉 Yutuqlar inventaringizga qo'shildi!`;
+                    let winTextHtml = `🎉 Siz yutib oldingiz: `;
+                    let actionsHtml = '';
+                    
+                    data.results.forEach((resItem, idx) => {
+                        let item = resItem.win_item;
+                        let invId = resItem.inventory_id;
+                        winTextHtml += `<br><b>${item.name}</b> (${item.val} Aim)`;
+                        actionsHtml += `
+                            <div style="display:flex; gap:6px; flex:1; flex-direction:column;">
+                                <span style="font-size:10px; color:var(--text-muted); text-align:center;">#${idx+1} Buyum</span>
+                                <div style="display:flex; gap:4px;">
+                                    <button class="btn-win-sell" onclick="sellWonItem(${invId}, this)">Sotish (${item.val} Aim)</button>
+                                    <button class="btn-win-keep" onclick="keepWonItem(this)">Saqlash</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    document.getElementById('win-result-text').innerHTML = winTextHtml;
+                    document.getElementById('win-actions-box').innerHTML = actionsHtml;
+                    document.getElementById('win-result-container').style.display = 'block';
                 }, 4100);
+            }
+
+            async function sellWonItem(inventoryId, btnElement) {
+                let res = await fetch('/sell_item', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `item_id=${inventoryId}&user_id=${userId}`
+                });
+                let data = await res.json();
+                if(data.success) {
+                    balanceAim = data.new_aim;
+                    updateUI();
+                    btnElement.parentElement.innerHTML = `<span style="color:#ef4444; font-size:11px; font-weight:bold; text-align:center; width:100%;">Sotildi! (+${data.sold_val} Aim)</span>`;
+                } else {
+                    alert(data.msg);
+                }
+            }
+
+            function keepWonItem(btnElement) {
+                btnElement.parentElement.innerHTML = `<span style="color:#10b981; font-size:11px; font-weight:bold; text-align:center; width:100%;">Saqlandi (Inventarda)</span>`;
             }
 
             async function loadInventory() {
@@ -579,15 +630,14 @@ async def index():
                 }
                 let html = '';
                 items.forEach(item => {
-                    let ucEq = (item.val / 100) * 60;
                     html += `
-                        <div class="inv-card">
+                        <div class="inv-card" id="inv-item-${item.id}">
                             <img src="${item.img}">
                             <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px;">${item.name}</div>
-                            <div style="font-size: 10px; color: #fbbf24; font-weight: bold;">${item.val} Aim</div>
+                            <div style="font-size: 10px; color: #a78bfa; font-weight: bold;">${item.val} Aim</div>
                             <div class="inv-actions">
-                                <button class="btn-sell" onclick="sellItem(${item.id})">Sotish</button>
-                                <button class="btn-keep" onclick="switchTab('inventory', null)">Saqlash</button>
+                                <button class="btn-inv-sell" onclick="sellInventoryItem(${item.id})">Sotish</button>
+                                <button class="btn-inv-keep" onclick="alert('Buyum allaqachon inventaringizda saqlangan!')">Saqlangan</button>
                             </div>
                         </div>
                     `;
@@ -595,7 +645,7 @@ async def index():
                 grid.innerHTML = html;
             }
 
-            async function sellItem(itemId) {
+            async function sellInventoryItem(itemId) {
                 let res = await fetch('/sell_item', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -605,7 +655,8 @@ async def index():
                 if(data.success) {
                     balanceAim = data.new_aim;
                     updateUI();
-                    loadInventory();
+                    let el = document.getElementById(`inv-item-${itemId}`);
+                    if(el) el.remove();
                 } else {
                     alert(data.msg);
                 }
@@ -712,7 +763,7 @@ async def index():
                     body: `code=${code}&user_id=${userId}`
                 });
                 let data = await res.json();
-                msg.style.color = data.success ? "#34d399" : "#ef4444";
+                msg.style.color = data.success ? "#10b981" : "#ef4444";
                 msg.innerText = data.msg;
                 if(data.success) { balanceAim += data.reward_aim; updateUI(); }
             }
@@ -742,10 +793,17 @@ async def open_case(case_id: str, user_id: int, count: int = Form(1)):
     for _ in range(count):
         win_item = random.choices(items, weights=chances, k=1)[0]
         random_items = [random.choice(items) for _ in range(15)]
-        results.append({"win_item": win_item, "random_items": random_items})
         
+        # Har doim baza inventariga qo'shamiz (foydalanuvchi "Sotish" ni bossa serverda o'chirib aim beramiz, "Saqlash" ni bossa inventarda qoladi)
         cursor.execute("INSERT INTO inventory (user_id, name, val, img) VALUES (?, ?, ?, ?)", 
                        (user_id, win_item["name"], win_item["val"], win_item["img"]))
+        inventory_id = cursor.lastrowid
+        
+        results.append({
+            "win_item": win_item, 
+            "random_items": random_items,
+            "inventory_id": inventory_id
+        })
     conn.commit()
     conn.close()
     
@@ -768,7 +826,7 @@ async def sell_item(item_id: int = Form(...), user_id: int = Form(...)):
     item = cursor.fetchone()
     if not item:
         conn.close()
-        return {"success": False, "msg": "Buyum topilmadi!"}
+        return {"success": False, "msg": "Buyum topilmadi yoki allaqachon sotilgan!"}
     
     aim_val = item["val"]
     cursor.execute("DELETE FROM inventory WHERE id = ?", (item_id,))
@@ -777,7 +835,7 @@ async def sell_item(item_id: int = Form(...), user_id: int = Form(...)):
     new_aim = cursor.fetchone()[0]
     conn.commit()
     conn.close()
-    return {"success": True, "new_aim": new_aim}
+    return {"success": True, "new_aim": new_aim, "sold_val": aim_val}
 
 @app.post("/topup_webhook")
 async def topup_webhook(uc: float = Form(...), user_id: int = Form(...), promo: str = Form("")):
@@ -848,4 +906,4 @@ async def partner_stats(user_id: int):
     return {"earned": res["partner_earned"] if res else 0.0}
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=10000)
+    uvicorn.run("app:app", host="0.0.0.0", port=10000) 
