@@ -5,14 +5,15 @@
     <title>Kirish - AimDrop</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <style>
-        body { background-color: #0b0f19; color: #fff; font-family: sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .card { background-color: #161d2e; border: 1px solid #222e45; border-radius: 12px; width: 100%; max-width: 400px; }
-        .btn-custom { background: linear-gradient(45deg, #f39c12, #e67e22); color: white; font-weight: bold; border: none; }
+        body { background-color: #0b0f19; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .card { background-color: #161d2e; border: 1px solid #222e45; border-radius: 12px; width: 100%; max-width: 400px; padding: 20px; }
+        .btn-custom { background: linear-gradient(45deg, #f39c12, #e67e22); color: white; font-weight: bold; width: 100%; border: none; }
+        .btn-custom:hover { background: linear-gradient(45deg, #e67e22, #d35400); color: white; }
     </style>
 </head>
 <body>
-    <div class="card p-4 shadow-lg">
-        <h3 class="text-center text-warning mb-4">AimDrop - Tizimga kirish</h3>
+    <div class="card shadow-lg">
+        <h3 class="text-center text-warning mb-4">Tizimga Kirish</h3>
         {% if error %}
             <div class="alert alert-danger py-2">{{ error }}</div>
         {% endif %}
@@ -25,8 +26,10 @@
                 <label class="form-label">Parol</label>
                 <input type="password" name="password" class="form-control bg-secondary text-white border-0" required>
             </div>
-            <button type="submit" class="btn btn-custom w-100 mb-3">Kirish</button>
-            <p class="text-center mb-0">Akkauntingiz yo'qmi? <a href="/register" class="text-warning">Ro'yxatdan o'tish</a></p>
+            <button type="submit" class="btn btn-custom mb-3">Kirish</button>
+            <div class="text-center">
+                <a href="/register" class="text-warning text-decoration-none">Akkauntingiz yo'qmi? Ro'yxatdan o'ting</a>
+            </div>
         </form>
     </div>
 </body>
