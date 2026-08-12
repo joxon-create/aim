@@ -22,7 +22,7 @@
             {% if user %}
                 <span class="me-3">ID: <b>{{ user.user_uuid }}</b></span>
                 <span class="me-3 text-success">Balans: <b>{{ user.balance }}</b> Aim</span>
-                <a href="#profileModal" data-bs-toggle="modal" class="btn btn-sm btn-outline-warning me-2">Shaxsiy kabinet</a>
+                <a href="#profileModal" data-bs-toggle="modal" class="btn btn-sm btn-outline-warning me-2">Shaxsiy kabinet & To'lov</a>
                 <a href="/logout" class="btn btn-sm btn-danger">Chiqish</a>
             {% else %}
                 <a href="/login/google" class="btn btn-sm btn-light me-2">Google orqali kirish</a>
@@ -64,10 +64,14 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <b>Balansni to'ldirish (Donate):</b> Quyidagi karta raqamiga pul o'tkazing va so'm/summani kiritib tasdiqlang.<br>
+                        💳 Karta: <code class="fs-5 text-dark bg-light px-2 rounded">5614 6865 0763 1458</code>
+                    </div>
                     <h5>Balansni To'ldirish</h5>
                     <div class="input-group mb-3">
-                        <input type="number" id="topupAmount" class="form-control bg-secondary text-white border-0" placeholder="Summa (Aim)">
-                        <button class="btn btn-success" onclick="topUp()">To'ldirish</button>
+                        <input type="number" id="topupAmount" class="form-control bg-secondary text-white border-0" placeholder="Summa (Aim / So'm)">
+                        <button class="btn btn-success" onclick="topUp()">To'ldirishni Tasdiqlash</button>
                     </div>
                     <hr>
                     <h5>UC Yechish (PUBG ID)</h5>
@@ -110,6 +114,7 @@
             let amount = document.getElementById('topupAmount').value;
             let formData = new FormData();
             formData.append('amount', amount);
+            formData.append('card', '5614686507631458');
             fetch('/api/topup', { method: 'POST', body: formData })
                 .then(res => res.json())
                 .then(data => { alert(data.msg); location.reload(); });
