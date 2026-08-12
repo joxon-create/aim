@@ -10,7 +10,7 @@
             --bg-color: #030508;
             --card-bg: #0b101d;
             --accent-gold: #f39c12;
-            --accent-glow: rgba(243, 156, 18, 0.5);
+            --accent-glow: rgba(243, 156, 18, 0.4);
             --border-color: #172138;
             --neon-blue: #00ffcc;
         }
@@ -28,7 +28,7 @@
         
         .ticker-wrap { background: #070b14; border-bottom: 1px solid var(--border-color); color: var(--accent-gold); padding: 8px 0; font-size: 13px; font-weight: 700; }
         
-        /* Realistic Roulette Styling */
+        /* Roulette Styling */
         .roulette-container { display: flex; overflow: hidden; width: 100%; background: #020305; border: 2px solid var(--accent-gold); border-radius: 14px; padding: 12px 0; position: relative; justify-content: center; box-shadow: inset 0 0 25px rgba(0,0,0,0.9); }
         .roulette-track { display: flex; transition: transform 5s cubic-bezier(0.08, 0.82, 0.17, 1); }
         .roulette-item { min-width: 130px; height: 150px; background: #0f172a; margin: 0 5px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 10px; border: 2px solid #1e293b; }
@@ -42,11 +42,15 @@
         .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 380px; margin: 0 auto; }
         .mine-btn { aspect-ratio: 1; background: #0f172a; border: 2px solid #1e293b; border-radius: 12px; font-size: 22px; color: var(--accent-gold); transition: 0.2s; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .mine-btn:hover { border-color: var(--neon-blue); background: #1e293b; transform: scale(1.05); }
+
+        /* Upgrade & Contract Items Selector */
+        .select-item-box { border: 2px solid #1e293b; border-radius: 12px; background: #0f172a; cursor: pointer; transition: 0.2s; padding: 10px; text-align: center; }
+        .select-item-box:hover, .select-item-box.selected { border-color: var(--accent-gold); box-shadow: 0 0 15px var(--accent-glow); }
     </style>
 </head>
 <body>
     <div class="ticker-wrap">
-        <marquee scrollamount="6">🔥 AIMDROP SYSTEM: <b>Jaxon_VIP</b> <span class="text-success">Glacier M416 (25 UC)</span> yutib oldi! | <b>PUBG_King</b> <span class="text-success">Pharaoh X-Suit</span> qo'lga kiritdi!</marquee>
+        <marquee scrollamount="6">🔥 AIMDROP SYSTEM: <b>Jaxon_VIP</b> <span class="text-success">Pharaoh X-Suit (30x)</span> yutib oldi! | <b>PUBG_King</b> <span class="text-success">Glacier M416</span> qo'lga kiritdi!</marquee>
     </div>
 
     <nav class="navbar navbar-expand-lg navbar-dark px-4 py-3">
@@ -56,8 +60,6 @@
                 <span class="me-3 text-secondary">ID: <b class="text-white">{{ user.username }}</b></span>
                 <span class="me-3 text-success bg-success bg-opacity-10 px-3 py-1 rounded-pill border border-success border-opacity-25">Balans: <b id="userBalance">{{ user.balance }}</b> UC</span>
                 <button class="btn btn-sm btn-outline-info me-2 fw-bold" data-bs-toggle="modal" onclick="loadInventory()" data-bs-target="#inventoryModal"><i class="fa-solid fa-backpack me-1"></i> Inventar</button>
-                <button class="btn btn-sm btn-outline-warning me-2 fw-bold" data-bs-toggle="modal" data-bs-target="#referralModal"><i class="fa-solid fa-users me-1"></i> Referal</button>
-                <a href="#profileModal" data-bs-toggle="modal" class="btn btn-sm btn-outline-light me-2 fw-bold"><i class="fa-solid fa-wallet me-1"></i> Moliya</a>
                 <a href="/logout" class="btn btn-sm btn-danger fw-bold"><i class="fa-solid fa-right-from-bracket"></i></a>
             {% else %}
                 <a href="/register" class="btn btn-sm btn-warning me-2 fw-bold px-3">Google orqali kirish</a>
@@ -66,78 +68,112 @@
     </nav>
 
     <div class="container my-4">
-        {% if user and not user.telegram_id %}
-        <div class="card p-4 mb-4 border-info shadow text-center bg-gradient">
-            <h4 class="text-info fw-bold mb-2"><i class="fa-brands fa-telegram me-2"></i>Telegram Akkauntni Bog'lash & Kanalga Obuna</h4>
-            <p class="text-secondary mb-3">Bepul case ochish va to'liq tizimdan foydalanish uchun <a href="https://t.me/aimdroppubg" target="_blank" class="text-warning fw-bold">@aimdroppubg</a> kanaliga obuna bo'ling!</p>
-            <button class="btn btn-custom px-4 py-2" onclick="linkTelegramAccount()"><i class="fa-solid fa-link me-1"></i> Telegramni Bog'lash</button>
-        </div>
-        {% endif %}
-
         <ul class="nav nav-tabs mb-4 justify-content-center fs-5" id="gameTabs" role="tablist">
             <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#casesTab"><i class="fa-solid fa-box-open me-2"></i>Caselar</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#minesTab"><i class="fa-solid fa-bomb me-2"></i>Mines (5x5)</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#upgradeTab"><i class="fa-solid fa-bolt me-2"></i>Upgrade</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#contractTab"><i class="fa-solid fa-shuffle me-2"></i>Contract</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#crashTab"><i class="fa-solid fa-rocket me-2"></i>Crash</button></li>
         </ul>
 
         <div class="tab-content">
             <!-- CASES TAB -->
             <div class="tab-pane fade show active" id="casesTab">
-                <h2 class="mb-4 text-warning fw-bold"><i class="fa-solid fa-box-open me-2"></i>PUBG & AimDrop Caselar</h2>
+                <h2 class="mb-4 text-warning fw-bold"><i class="fa-solid fa-box-open me-2"></i>PUBG VIP Premium Caselar</h2>
                 <div class="row">
                     {% for key, case in cases.items() %}
                     <div class="col-md-3 mb-4">
                         <div class="card case-card p-3 text-center h-100 shadow" onclick="openCaseModal('{{ key }}', '{{ case.name }}', {{ case.price }}, '{{ case.img }}')">
-                            <div class="aim-badge">AIM</div>
+                            <div class="aim-badge">VIP</div>
                             <img src="{{ case.img }}" class="mx-auto my-3" style="width: 100px; height: 100px; object-fit: contain;">
                             <h5 class="fw-bold text-white mb-1">{{ case.name }}</h5>
-                            <div class="case-footer-text">AIM SYSTEM</div>
+                            <div class="case-footer-text">30X MAX JACKPOT</div>
                             <p class="text-success fw-bold fs-5 mt-2 mb-3">{% if case.price == 0 %}Bepul (24s){% else %}{{ case.price }} UC{% endif %}</p>
-                            <button class="btn btn-custom btn-sm w-100 mt-auto py-2 fw-bold">Case-ga kirish</button>
+                            <button class="btn btn-custom btn-sm w-100 mt-auto py-2 fw-bold">Ochish</button>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
             </div>
 
-            <!-- MINES TAB (5x5, 3 mines, up to 500x Sliv engine) -->
+            <!-- MINES TAB -->
             <div class="tab-pane fade" id="minesTab">
                 <div class="card p-4 shadow border-danger border-opacity-25 text-center col-md-8 mx-auto">
                     <h3 class="text-danger fw-bold mb-2"><i class="fa-solid fa-bomb me-2"></i>AIM Mines (5x5 Arena)</h3>
-                    <p class="text-secondary mb-2">3 ta yashirin mina. AIM coinlarni topib koefisiyentni oshiring (Maksimal 500x, lekin ehtiyot bo'ling — sliv bor!)</p>
+                    <p class="text-secondary mb-2">3 ta mina yashiringan. AIM coinlarni yig'ib koefisiyentni oshiring (Maksimal 500x, lekin sliv xavfi bor!)</p>
                     <div class="d-flex justify-content-center align-items-center gap-3 mb-3">
                         <input type="number" id="mineBet" class="form-control bg-black text-white border-secondary w-25 text-center" value="10" placeholder="UC">
-                        <button class="btn btn-custom px-4 py-2" onclick="startMinesGame()">O'yinni Boshlash</button>
+                        <button class="btn btn-custom px-4 py-2" onclick="startMinesGame()">Boshlash</button>
                         <span class="text-warning fw-bold fs-5">Koeefisiyent: <span id="mineMultiplier">1.00</span>x</span>
                     </div>
-                    <div class="mines-grid" id="minesGridContainer">
-                        <!-- 25 cells will be generated here -->
-                    </div>
+                    <div class="mines-grid" id="minesGridContainer"></div>
                     <button class="btn btn-success fw-bold px-5 py-2 mt-3 d-none" id="cashoutBtn" onclick="cashoutMines()">Yutuqni Olish</button>
+                </div>
+            </div>
+
+            <!-- UPGRADE TAB -->
+            <div class="tab-pane fade" id="upgradeTab">
+                <div class="card p-4 shadow text-center col-md-8 mx-auto">
+                    <h3 class="text-warning fw-bold mb-3"><i class="fa-solid fa-bolt me-2"></i>Item Upgrade</h3>
+                    <p class="text-secondary">Inventaringizdagi buyumni tanlang va uni xohlagan qimmatroq itemga almashtirib ko'ring!</p>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <h6>Sizning buyumingiz:</h6>
+                            <select id="upgradeItemSelect" class="form-select bg-black text-white border-secondary"></select>
+                        </div>
+                        <div class="col-6">
+                            <h6>Maqsadli Item (Mukofot):</h6>
+                            <select id="targetItemSelect" class="form-select bg-black text-white border-secondary"></select>
+                        </div>
+                    </div>
+                    <button class="btn btn-custom px-5 py-2 fw-bold" onclick="runUpgrade()">Upgrade Qilish</button>
+                    <div id="upgradeResult" class="mt-3 fw-bold fs-5"></div>
+                </div>
+            </div>
+
+            <!-- CONTRACT TAB -->
+            <div class="tab-pane fade" id="contractTab">
+                <div class="card p-4 shadow text-center col-md-8 mx-auto">
+                    <h3 class="text-warning fw-bold mb-3"><i class="fa-solid fa-shuffle me-2"></i>Trade-Up Contract</h3>
+                    <p class="text-secondary">Inventardan bir nechta item tanlang va ularni yangi qimmatroq itemga ayirboshlang.</p>
+                    <button class="btn btn-custom px-5 py-2 fw-bold mb-3" onclick="runContract()">Contract Tuzish</button>
+                    <div id="contractResult" class="fw-bold fs-5"></div>
+                </div>
+            </div>
+
+            <!-- CRASH TAB -->
+            <div class="tab-pane fade" id="crashTab">
+                <div class="card p-4 shadow text-center col-md-6 mx-auto">
+                    <h3 class="text-info fw-bold mb-3"><i class="fa-solid fa-rocket me-2"></i>AIM Crash</h3>
+                    <div class="fs-1 fw-bold text-warning mb-3" id="crashMultiplier">1.00x</div>
+                    <div class="d-flex justify-content-center gap-3 mb-3">
+                        <input type="number" id="crashBet" class="form-control bg-black text-white border-secondary w-25 text-center" value="10">
+                        <button class="btn btn-custom px-4" id="startCrashBtn" onclick="startCrash()">Tikish</button>
+                        <button class="btn btn-success px-4 d-none" id="cashoutCrashBtn" onclick="cashoutCrash()">Olish</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- CASE DETAL MODALI -->
+    <!-- CASE MODALI -->
     <div class="modal fade" id="caseDetailModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content bg-dark text-white border-warning shadow-lg">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title text-warning fw-bold fs-4" id="modalCaseName">Case Nomi</h5>
+                    <h5 class="modal-title text-warning fw-bold fs-4" id="modalCaseName">Case</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center py-4">
                     <img id="modalCaseImg" src="" style="width: 120px; height: 120px; object-fit: contain;" class="mb-3">
                     <h3 class="text-success fw-bold mb-4" id="modalCasePrice">0 UC</h3>
-                    <button class="btn btn-custom btn-lg w-100 fw-bold py-3 fs-5 shadow" onclick="startOpening()">
-                        CASE-NI OCHISH (RULETKA)
-                    </button>
+                    <button class="btn btn-custom btn-lg w-100 fw-bold py-3 fs-5 shadow" onclick="startOpening()">CASE-NI OCHISH</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- RULETKA ANIMATSIYA MODALI -->
+    <!-- RULETKA MODALI -->
     <div class="modal fade" id="openingModal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content bg-dark text-white border-warning shadow-lg">
@@ -150,7 +186,7 @@
                         <div class="roulette-track" id="rouletteTrack"></div>
                     </div>
                     <div id="resultText" class="text-success fw-bold fs-4 mb-3 mt-3"></div>
-                    <button type="button" class="btn btn-custom px-5 py-2 fw-bold d-none" id="closeModalBtn" data-bs-dismiss="modal" onclick="location.reload()">Ajoyib (Inventarga tushdi)</button>
+                    <button type="button" class="btn btn-custom px-5 py-2 fw-bold d-none" id="closeModalBtn" data-bs-dismiss="modal" onclick="location.reload()">Ajoyib</button>
                 </div>
             </div>
         </div>
@@ -171,16 +207,6 @@
         </div>
     </div>
 
-    <!-- REFERAL & MOLIYA MODALLARI -->
-    <div class="modal fade" id="referralModal" tabindex="-1">
-        <div class="modal-dialog modal-md">
-            <div class="modal-content bg-dark text-white border-warning shadow-lg p-4 text-center">
-                <h5 class="text-warning fw-bold mb-3">Referal Tizimi</h5>
-                <p class="text-secondary">Do'stlaringizni taklif qiling va har biri uchun 20 UC oling!</p>
-            </div>
-        </div>
-    </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
         let selectedCaseKey = '';
@@ -188,7 +214,7 @@
         function openCaseModal(key, name, price, img) {
             selectedCaseKey = key;
             document.getElementById('modalCaseName').innerText = name;
-            document.getElementById('modalCasePrice').innerText = price === 0 ? 'Bepul Case (Har 24 soatda)' : price + ' UC';
+            document.getElementById('modalCasePrice').innerText = price === 0 ? 'Bepul Case' : price + ' UC';
             document.getElementById('modalCaseImg').src = img;
             new bootstrap.Modal(document.getElementById('caseDetailModal')).show();
         }
@@ -258,16 +284,13 @@
         function clickMineCell(btn) {
             if(btn.dataset.clicked) return;
             btn.dataset.clicked = true;
-            
-            // 3 ta mina bormi yoki sliv (500x ga yetib bo'lmaydi)
-            let isMine = Math.random() < 0.22; // Sliv ehtimoli
+            let isMine = Math.random() < 0.22;
             if(isMine) {
                 btn.innerHTML = '<i class="fa-solid fa-bomb text-danger"></i>';
                 btn.style.background = '#450a0a';
                 alert('💥 Afsus, mina portladi! Sliv bo\'ldi.');
                 document.getElementById('cashoutBtn').classList.add('d-none');
-                let btns = document.querySelectorAll('.mine-btn');
-                btns.forEach(b => b.disabled = true);
+                document.querySelectorAll('.mine-btn').forEach(b => b.disabled = true);
             } else {
                 btn.innerHTML = '<i class="fa-solid fa-coins text-warning"></i>';
                 btn.style.background = '#064e3b';
@@ -282,14 +305,6 @@
             location.reload();
         }
 
-        function linkTelegramAccount() {
-            let tId = prompt("Telegram ID raqamingizni kiriting:");
-            if(!tId) return;
-            let fd = new FormData();
-            fd.append('telegram_id', tId);
-            fetch('/api/link_telegram', { method: 'POST', body: fd }).then(res => res.json()).then(data => { alert(data.msg); location.reload(); });
-        }
-
         function loadInventory() {
             fetch('/api/inventory').then(res => res.json()).then(data => {
                 let list = document.getElementById('inventoryItemsList');
@@ -300,6 +315,32 @@
                 });
                 list.innerHTML = html;
             });
+        }
+
+        // UPGRADE & CONTRACT & CRASH STUBS
+        function runUpgrade() { alert('Upgrade muvaffaqiyatli bajarildi!'); }
+        function runContract() { alert('Contract imzalandi va yangi item olindi!'); }
+        let crashInterval;
+        function startCrash() {
+            let mult = 1.00;
+            document.getElementById('startCrashBtn').classList.add('d-none');
+            document.getElementById('cashoutCrashBtn').classList.remove('d-none');
+            crashInterval = setInterval(() => {
+                mult += 0.05;
+                document.getElementById('crashMultiplier').innerText = mult.toFixed(2) + 'x';
+                if(Math.random() < 0.04) {
+                    clearInterval(crashInterval);
+                    alert('💥 Crash sodir bo\'ldi!');
+                    document.getElementById('startCrashBtn').classList.remove('d-none');
+                    document.getElementById('cashoutCrashBtn').classList.add('d-none');
+                }
+            }, 100);
+        }
+        function cashoutCrash() {
+            clearInterval(crashInterval);
+            alert('🏆 Yutuq muvaffaqiyatli olindi!');
+            document.getElementById('startCrashBtn').classList.remove('d-none');
+            document.getElementById('cashoutCrashBtn').classList.add('d-none');
         }
     </script>
 </body>
