@@ -2,20 +2,11 @@ import os
 import random
 import sqlite3
 import time
-import requests
 from flask import Flask, render_template, request, redirect, session, jsonify, url_for
-from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash
 
 app = Flask(__name__)
-app.secret_key = 'aimdrop_pubg_ultra_ultimate_2026'
-
-UPLOAD_FOLDER = 'static/checks'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-TELEGRAM_BOT_TOKEN = "8253855521:AAHSIzRLRV_v2IqZQXeL32JJxZppLA1KwoY"
-ADMIN_TELEGRAM_ID = "8692517241"
+app.secret_key = 'aimdrop_ultimate_secure_2026'
 
 def get_db():
     conn = sqlite3.connect('aimdrop_ecosystem.db', check_same_thread=False)
@@ -30,9 +21,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
             password TEXT,
-            balance REAL DEFAULT 100.0,
-            total_deposited REAL DEFAULT 0.0,
-            deposit_count INTEGER DEFAULT 0,
+            balance REAL DEFAULT 150.0,
             telegram_id TEXT,
             last_free_case TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -48,16 +37,6 @@ def init_db():
             status TEXT DEFAULT 'inventory'
         )
     ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS payments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            amount REAL,
-            check_image TEXT,
-            status TEXT DEFAULT 'pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
     conn.commit()
     conn.close()
 
@@ -71,15 +50,12 @@ PUBG_ICONS = [
     "https://cdn-icons-png.flaticon.com/512/807/807281.png"
 ]
 
-# 35 ta buyum (0.01% ehtimollik bilan 25 UC lik Glacier M416 tushishi uchun maxsus tanlanadi)
 FREE_CASE_ITEMS = []
 for i in range(1, 36):
     if i == 1:
-        price = 25.0
-        name = "Glacier M416 (AIM Edition - 0.01%)"
+        price, name = 25.0, "Glacier M416 (0.01% Rare)"
     else:
-        price = round(random.uniform(0.15, 3.5), 2)
-        name = f"PUBG Supply Item #{i}"
+        price, name = round(random.uniform(0.15, 3.5), 2), f"PUBG Item #{i}"
     FREE_CASE_ITEMS.append({"id": i, "name": name, "price": price, "img": PUBG_ICONS[i % len(PUBG_ICONS)]})
 
 CASE_NAMES = [
@@ -91,35 +67,17 @@ CASE_NAMES = [
 ]
 
 CASES = {
-    "free_case": {
-        "id": "free_case",
-        "name": "Kunlik Bepul Case (AIM)",
-        "price": 0,
-        "img": PUBG_ICONS[0],
-        "items": FREE_CASE_ITEMS
-    }
+    "free_case": {"id": "free_case", "name": "Kunlik Bepul Case (AIM)", "price": 0, "img": PUBG_ICONS[0], "items": FREE_CASE_ITEMS}
 }
 
 for i in range(1, 21):
-    case_key = f"case_{i}"
+    c_key = f"case_{i}"
     price = round(30.0 + (i - 1) * (970.0 / 19.0), 1)
     items = []
     for j in range(1, 36):
-        if j == 1:
-            p_val = price * 1.5  # 0.01% ehtimol uchun qimmat item
-            n_val = f"{CASE_NAMES[i-1]} - Rare Glacier"
-        else:
-            p_val = round((price / 100.0) * random.uniform(0.1, 1.2), 2)
-            n_val = f"{CASE_NAMES[i-1]} - Item #{j}"
-        items.append({"id": j, "name": n_val, "price": p_val, "img": PUBG_ICONS[j % len(PUBG_ICONS)]})
-    
-    CASES[case_key] = {
-        "id": case_key,
-        "name": CASE_NAMES[i-1],
-        "price": price,
-        "img": PUBG_ICONS[(i-1) % len(PUBG_ICONS)],
-        "items": items
-    }
+        p_val = price * 1.5 if j == 1 else round((price / 100.0) * random.uniform(0.1, 1.2), 2)
+        items.append({"id": j, "name": f"{CASE_NAMES[i-1]} - Item #{j}", "price": p_val, "img": PUBG_ICONS[j % len(PUBG_ICONS)]})
+    CASES[c_key] = {"id": c_key, "name": CASE_NAMES[i-1], "price": price, "img": PUBG_ICONS[(i-1) % len(PUBG_ICONS)], "items": items}
 
 @app.route('/')
 def index():
@@ -132,28 +90,18 @@ def index():
         conn.close()
     return render_template('index.html', user=user, cases=CASES)
 
-@app.route('/register', methods=['GET', 'POST'])
+@app.route('/register')
 def register():
-    # Google orqali tezkor kirish simulyatsiyasi (avtomatik yaratish va sessiyada saqlash)
-    google_username = f"GoogleUser_{random.randint(1000, 9999)}"
+    g_name = f"GoogleUser_{random.randint(1000, 9999)}"
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE username = ?", (google_username,))
-    existing = cursor.fetchone()
-    if not existing:
-        cursor.execute("INSERT INTO users (username, password, balance) VALUES (?, ?, ?)", 
-                       (google_username, generate_password_hash("google_auth"), 100.0))
-        conn.commit()
-        cursor.execute("SELECT * FROM users WHERE username = ?", (google_username,))
-        existing = cursor.fetchone()
-    
-    session['user_id'] = existing['id']
+    cursor.execute("INSERT INTO users (username, password, balance) VALUES (?, ?, ?)", (g_name, generate_password_hash("google"), 150.0))
+    conn.commit()
+    cursor.execute("SELECT * FROM users WHERE username = ?", (g_name,))
+    user = cursor.fetchone()
+    session['user_id'] = user['id']
     conn.close()
     return redirect(url_for('index'))
-
-@app.route('/login')
-def login():
-    return redirect(url_for('register'))
 
 @app.route('/logout')
 def logout():
@@ -162,21 +110,18 @@ def logout():
 
 @app.route('/api/link_telegram', methods=['POST'])
 def link_telegram():
-    if 'user_id' not in session:
-        return jsonify({"success": False, "msg": "Kirmagansiz!"})
+    if 'user_id' not in session: return jsonify({"success": False})
     t_id = request.form.get('telegram_id')
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("UPDATE users SET telegram_id = ? WHERE id = ?", (t_id, session['user_id']))
     conn.commit()
     conn.close()
-    return jsonify({"success": True, "msg": "Telegram akkauntingiz muvaffaqiyatli bog'landi!"})
+    return jsonify({"success": True, "msg": "Telegram muvaffaqiyatli bog'landi!"})
 
 @app.route('/api/open_free_case', methods=['POST'])
 def open_free_case():
-    if 'user_id' not in session:
-        return jsonify({"success": False, "msg": "Kirmagansiz!"})
-    
+    if 'user_id' not in session: return jsonify({"success": False, "msg": "Kirmagansiz!"})
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],))
@@ -184,21 +129,15 @@ def open_free_case():
     
     if not user['telegram_id']:
         conn.close()
-        return jsonify({"success": False, "msg": "Avval Telegram akkauntingizni ulang va kanalga obuna bo'ling!"})
+        return jsonify({"success": False, "msg": "Avval Telegramni ulang va kanalga obuna bo'ling!"})
         
     cursor.execute("SELECT datetime(last_free_case, '+24 hours') > datetime('CURRENT_TIMESTAMP') FROM users WHERE id = ?", (user['id'],))
     res = cursor.fetchone()
     if res and res[0]:
         conn.close()
-        return jsonify({"success": False, "msg": "Bepul case'ni har 24 soatda faqat 1 marta ochish mumkin!"})
+        return jsonify({"success": False, "msg": "Bepul case'ni har 24 soatda bir marta ochish mumkin!"})
     
-    # 0.01% ehtimollik bilan 25 UC lik Glacier M416 tushishi
-    rand_val = random.random()
-    if rand_val < 0.0001:  # 0.01%
-        won_item = FREE_CASE_ITEMS[0]
-    else:
-        won_item = random.choice(FREE_CASE_ITEMS[1:])
-        
+    won_item = FREE_CASE_ITEMS[0] if random.random() < 0.0001 else random.choice(FREE_CASE_ITEMS[1:])
     cursor.execute("INSERT INTO inventory (user_id, item_name, item_image, item_price, status) VALUES (?, ?, ?, ?, 'inventory')",
                    (user['id'], won_item['name'], won_item['img'], won_item['price']))
     cursor.execute("UPDATE users SET last_free_case = CURRENT_TIMESTAMP WHERE id = ?", (user['id'],))
@@ -208,11 +147,7 @@ def open_free_case():
 
 @app.route('/api/open_case/<case_id>', methods=['POST'])
 def open_case_api(case_id):
-    if 'user_id' not in session:
-        return jsonify({"success": False, "msg": "Kirmagansiz!"})
-    if case_id not in CASES:
-        return jsonify({"success": False, "msg": "Case topilmadi!"})
-        
+    if 'user_id' not in session: return jsonify({"success": False, "msg": "Kirmagansiz!"})
     case = CASES[case_id]
     conn = get_db()
     cursor = conn.cursor()
@@ -221,83 +156,26 @@ def open_case_api(case_id):
     
     if user['balance'] < case['price']:
         conn.close()
-        return jsonify({"success": False, "msg": "Balansingiz yetarli emas!"})
+        return jsonify({"success": False, "msg": "Balans yetarli emas!"})
         
     cursor.execute("UPDATE users SET balance = balance - ? WHERE id = ?", (case['price'], user['id']))
+    won_item = case['items'][0] if random.random() < 0.0001 else random.choice(case['items'][1:])
     
-    # Stratgey: 1-chi depozitdan so'ng 3 barobarigacha chiqarib oladi, keyingi safarlari aniq sliv (omadi kelmaydi)
-    if user['deposit_count'] == 1 and user['balance'] <= user['total_deposited'] * 3.0:
-        won_item = random.choice(case['items'])  # 1-chi safar omadliroq
-    elif user['deposit_count'] > 1:
-        won_item = case['items'][-1]  # Arzon item (sliv)
-    else:
-        if random.random() < 0.0001:  # 0.01% eng qimmat narsa
-            won_item = case['items'][0]
-        else:
-            won_item = random.choice(case['items'][1:])
-            
     cursor.execute("INSERT INTO inventory (user_id, item_name, item_image, item_price, status) VALUES (?, ?, ?, ?, 'inventory')",
                    (user['id'], won_item['name'], won_item['img'], won_item['price']))
-    
-    # Sliv mantiqi: Agar depozit qilingan bo'lsa va limitdan oshsa, avtomatik cheklash
-    if user['total_deposited'] > 0 and user['deposit_count'] > 1:
-        cursor.execute("UPDATE users SET balance = balance * 0.95 WHERE id = ?", (user['id'],)) # Sliv trend
-        
     conn.commit()
     conn.close()
     return jsonify({"success": True, "won_item": won_item, "all_items": case['items']})
 
-@app.route('/api/topup', methods=['POST'])
-def topup_balance():
-    if 'user_id' not in session:
-        return jsonify({"success": False, "msg": "Kirmagansiz!"})
-    amount = float(request.form.get('amount', 0))
-    file = request.files.get('check_image')
-    if amount <= 0 or not file:
-        return jsonify({"success": False, "msg": "Ma'lumotlar xato!"})
-        
-    filename = secure_filename(f"{time.time()}_{file.filename}")
-    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-    
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],))
-    user = cursor.fetchone()
-    
-    # Depozit soni va miqdorini yangilaymiz (1-chi safar 3 barobar, keyingisi sliv)
-    cursor.execute("UPDATE users SET total_deposited = total_deposited + ?, deposit_count = deposit_count + 1, balance = balance + ? WHERE id = ?", 
-                   (amount, amount, user['id']))
-    conn.commit()
-    conn.close()
-    return jsonify({"success": True, "msg": "To'lov qabul qilindi! Balansga qo'shildi."})
-
 @app.route('/api/inventory')
 def get_inventory():
-    if 'user_id' not in session:
-        return jsonify({"items": []})
+    if 'user_id' not in session: return jsonify({"items": []})
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM inventory WHERE user_id = ? AND status = 'inventory'", (session['user_id'],))
     items = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return jsonify({"items": items})
-
-@app.route('/api/sell_item/<int:item_id>', methods=['POST'])
-def sell_item(item_id):
-    if 'user_id' not in session:
-        return jsonify({"success": False, "msg": "Kirmagansiz!"})
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM inventory WHERE id = ? AND user_id = ? AND status = 'inventory'", (item_id, session['user_id']))
-    item = cursor.fetchone()
-    if not item:
-        conn.close()
-        return jsonify({"success": False, "msg": "Topilmadi!"})
-    cursor.execute("UPDATE inventory SET status = 'sold' WHERE id = ?", (item['id'],))
-    cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (item['item_price'], session['user_id']))
-    conn.commit()
-    conn.close()
-    return jsonify({"success": True, "msg": f"+{item['item_price']} UC qo'shildi!"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
