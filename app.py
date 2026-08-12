@@ -15,12 +15,12 @@ UPLOAD_FOLDER = 'static/checks'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-TELEGRAM_BOT_TOKEN = "8253855521:AAGNmh_BuOSUbF_Z8prnOUJ67sE3EDU2Q2c"  
+TELEGRAM_BOT_TOKEN = "8253855521:AAHPiRKVYM7L_S7Xupvewx6Ct9a4jBJFZKE"  
 ADMIN_TELEGRAM_ID = "8692517241"      
 
 def notify_telegram(message):
     try:
-        if TELEGRAM_BOT_TOKEN != "8253855521:AAGNmh_BuOSUbF_Z8prnOUJ67sE3EDU2Q2c":
+        if TELEGRAM_BOT_TOKEN != "8253855521:AAHPiRKVYM7L_S7Xupvewx6Ct9a4jBJFZKE":
             url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
             requests.post(url, json={"chat_id": ADMIN_TELEGRAM_ID, "text": message, "parse_mode": "Markdown"})
     except Exception as e:
@@ -122,13 +122,18 @@ def init_db():
 
 init_db()
 
-PUBG_ICONS = [
-    "https://cdn-icons-png.flaticon.com/512/3076/3076137.png",
-    "https://cdn-icons-png.flaticon.com/512/1069/1069158.png",
-    "https://cdn-icons-png.flaticon.com/512/1069/1069216.png",
-    "https://cdn-icons-png.flaticon.com/512/1046/1046857.png",
-    "https://cdn-icons-png.flaticon.com/512/807/807281.png",
-    "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+# Haqiqiy PUBG Mobile skinlari uchun yuqori sifatli CDNciz rasmlar to'plami
+PUBG_SKINS = [
+    {"name": "Glacier M416", "img": "https://www.pngmart.com/files/22/PUBG-Gun-PNG-Isolated-HD.png", "price": 850.0},
+    {"name": "Pharaoh X-Suit", "img": "https://www.pngmart.com/files/22/PUBG-Character-PNG-Pic.png", "price": 1200.0},
+    {"name": "Blood Raven X-Suit", "img": "https://www.pngmart.com/files/22/PUBG-Character-Transparent-Background.png", "price": 1100.0},
+    {"name": "M416 The Fool", "img": "https://www.pngmart.com/files/22/PUBG-Gun-Transparent-Images.png", "price": 950.0},
+    {"name": "Mummy Set (Yellow)", "img": "https://www.pngmart.com/files/22/PUBG-Character-Background-Isolated.png", "price": 700.0},
+    {"name": "Poseidon X-Suit", "img": "https://www.pngmart.com/files/22/PUBG-Character-PNG-Clipart.png", "price": 1250.0},
+    {"name": "AWM Field Commander", "img": "https://www.pngmart.com/files/22/PUBG-Weapon-PNG-Isolated.png", "price": 600.0},
+    {"name": "Groza Laser", "img": "https://www.pngmart.com/files/22/PUBG-Gun-PNG-Clipart.png", "price": 500.0},
+    {"name": "Common Silver Item", "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "price": 15.0},
+    {"name": "Classic Coupon Scrap", "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "price": 5.0}
 ]
 
 CASE_NAMES = [
@@ -144,28 +149,19 @@ for i in range(1, 21):
     case_key = f"case_{i}"
     price = round(30.0 + (i - 1) * (970.0 / 19.0), 1)
     items = []
-    for j in range(1, 33):
-        if j == 1:
-            tier = "Mythic"
-            mult = random.uniform(2.0, 4.0)
-        elif j <= 6:
-            tier = "Legendary"
-            mult = random.uniform(0.7, 1.2)
-        else:
-            tier = "Loss/Common"
-            mult = random.uniform(0.05, 0.4)
-            
+    for j in range(1, 25):
+        base_skin = random.choice(PUBG_SKINS)
         items.append({
             "id": j,
-            "name": f"{CASE_NAMES[i-1]} - Item #{j} ({tier})",
-            "price": round(price * mult, 2),
-            "img": PUBG_ICONS[j % len(PUBG_ICONS)]
+            "name": f"{CASE_NAMES[i-1]} - {base_skin['name']}",
+            "price": round(base_skin['price'] * (price / 200.0), 2),
+            "img": base_skin['img']
         })
     CASES[case_key] = {
         "id": case_key,
         "name": CASE_NAMES[i-1],
         "price": price,
-        "img": PUBG_ICONS[(i-1) % len(PUBG_ICONS)],
+        "img": PUBG_SKINS[(i-1) % len(PUBG_SKINS)]['img'],
         "items": items
     }
 
@@ -240,7 +236,7 @@ def daily_bonus():
         conn.close()
         return jsonify({"success": False, "msg": "Kunlik bonusni 24 soatda bir marta olish mumkin!"})
         
-    bonus_val = random.randint(10, 50)
+    bonus_val = random.randint(15, 50)
     cursor.execute("UPDATE users SET balance = balance + ?, last_bonus = CURRENT_TIMESTAMP WHERE id = ?", (bonus_val, user['id']))
     conn.commit()
     conn.close()
@@ -277,7 +273,7 @@ def topup_balance():
 def open_case_api(case_id, count):
     if 'user_id' not in session:
         return jsonify({"success": False, "msg": "Tizimga kirmagansiz!"})
-    if case_id not in CASES or count not in [1, 5]:
+    if case_id not in CASES or count not in [1, 2, 3, 4, 5, 10]:
         return jsonify({"success": False, "msg": "Noto'g'ri so'rov!"})
         
     case = CASES[case_id]
@@ -290,25 +286,68 @@ def open_case_api(case_id, count):
     
     if user['balance'] < total_price:
         conn.close()
-        return jsonify({"success": False, "msg": "Balansingiz yetarli emas!"})
+        return jsonify({"success": False, "msg": "Balansingiz yetarli emas! Pul kiriting."})
     
     cursor.execute("UPDATE users SET balance = balance - ? WHERE id = ?", (total_price, user['id']))
     
     won_items = []
     for _ in range(count):
-        if user['total_deposited'] > 300:
-            loss_items = [it for it in case['items'] if "Loss" in it['name']]
-            won_item = random.choice(loss_items) if loss_items else random.choice(case['items'])
-        else:
-            won_item = random.choice(case['items'])
-        
-        cursor.execute("INSERT INTO inventory (user_id, item_name, item_image, item_price) VALUES (?, ?, ?, ?)",
+        won_item = random.choice(case['items'])
+        cursor.execute("INSERT INTO inventory (user_id, item_name, item_image, item_price, status) VALUES (?, ?, ?, ?, 'inventory')",
                        (user['id'], won_item['name'], won_item['img'], won_item['price']))
         won_items.append(won_item)
         
     conn.commit()
     conn.close()
     return jsonify({"success": True, "won_items": won_items, "all_items": case['items']})
+
+@app.route('/api/inventory')
+def get_inventory():
+    if 'user_id' not in session:
+        return jsonify({"items": []})
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM inventory WHERE user_id = ? AND status = 'inventory'", (session['user_id'],))
+    items = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return jsonify({"items": items})
+
+@app.route('/api/sell_item/<int:item_id>', methods=['POST'])
+def sell_item(item_id):
+    if 'user_id' not in session:
+        return jsonify({"success": False, "msg": "Kirmagansiz!"})
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM inventory WHERE id = ? AND user_id = ? AND status = 'inventory'", (item_id, session['user_id']))
+    item = cursor.fetchone()
+    if not item:
+        conn.close()
+        return jsonify({"success": False, "msg": "Buyum topilmadi!"})
+    
+    cursor.execute("UPDATE inventory SET status = 'sold' WHERE id = ?", (item['id'],))
+    cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (item['item_price'], session['user_id']))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "msg": f"{item['item_price']} UC balansga qo'shildi!"})
+
+@app.route('/api/sell_all_inventory', methods=['POST'])
+def sell_all_inventory():
+    if 'user_id' not in session:
+        return jsonify({"success": False, "msg": "Kirmagansiz!"})
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT SUM(item_price) FROM inventory WHERE user_id = ? AND status = 'inventory'", (session['user_id'],))
+    total_sum = cursor.fetchone()[0]
+    
+    if not total_sum or total_sum <= 0:
+        conn.close()
+        return jsonify({"success": False, "msg": "Inventaringizda sotiladigan buyum yo'q!"})
+        
+    cursor.execute("UPDATE inventory SET status = 'sold' WHERE user_id = ? AND status = 'inventory'", (session['user_id'],))
+    cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (total_sum, session['user_id']))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "msg": f"Barcha buyumlar sotildi! Jami +{total_sum} UC qo'shildi."})
 
 @app.route('/api/withdraw_uc', methods=['POST'])
 def withdraw_uc():
@@ -318,7 +357,7 @@ def withdraw_uc():
     uc_amount = int(request.form.get('uc_amount', 0))
     
     if not pubg_id or uc_amount < 60:
-        return jsonify({"success": False, "msg": "Minimal UC yechish 60 UC va PUBG ID shart!"})
+        return jsonify({"success": False, "msg": "Minimal UC yechish 60 UC va PUBG ID kiritish shart!"})
         
     conn = get_db()
     cursor = conn.cursor()
@@ -364,10 +403,6 @@ def activate_promo():
     cursor.execute("INSERT INTO promo_history (user_id, promo_id) VALUES (?, ?)", (user['id'], promo['id']))
     cursor.execute("UPDATE promo_codes SET uses_count = uses_count + 1 WHERE id = ?", (promo['id'],))
     
-    if promo['partner_id']:
-        partner_bonus = promo['bonus'] * 0.20
-        cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (partner_bonus, promo['partner_id']))
-        
     conn.commit()
     conn.close()
     return jsonify({"success": True, "msg": f"Muvaffaqiyatli! +{promo['bonus']} UC qo'shildi."})
