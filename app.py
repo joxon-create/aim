@@ -1,11 +1,31 @@
+import os
 import random
 import sqlite3
 import time
 import threading
+import requests
 from flask import Flask, render_template, request, redirect, session, jsonify, url_for
+from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.secret_key = 'aimdrop_pubg_secret_key_2026_secure'
+app.secret_key = 'aimdrop_pubg_ultra_secure_key_2026'
+
+UPLOAD_FOLDER = 'static/checks'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# TELEGRAM BOT CONFIG (@JAXONORG uchun)
+TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"  # Zarur bo'lsa bot token yozasiz
+ADMIN_TELEGRAM_ID = "YOUR_CHAT_ID_HERE"      # Admin chat ID
+
+def notify_telegram(message):
+    try:
+        if TELEGRAM_BOT_TOKEN != "YOUR_BOT_TOKEN_HERE":
+            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+            requests.post(url, json={"chat_id": ADMIN_TELEGRAM_ID, "text": message, "parse_mode": "Markdown"})
+    except Exception as e:
+        print("Telegram error:", e)
 
 # --- GLOBAL CRASH O'YIN SERVERI ---
 global_crash_multiplier = 1.0
@@ -41,13 +61,10 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_uuid TEXT UNIQUE,
-            username TEXT,
-            auth_provider TEXT,
-            balance REAL DEFAULT 500.0,
-            demo_balance REAL DEFAULT 1000.0,
-            is_partner INTEGER DEFAULT 0,
-            referrer_id INTEGER,
+            username TEXT UNIQUE,
+            password TEXT,
+            balance REAL DEFAULT 100.0,
+            total_deposited REAL DEFAULT 0.0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -66,9 +83,9 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER,
             amount REAL,
-            provider TEXT,
             card_number TEXT,
-            status TEXT DEFAULT 'completed',
+            check_image TEXT,
+            status TEXT DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -87,7 +104,6 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             code TEXT UNIQUE,
             bonus REAL,
-            is_free_case INTEGER DEFAULT 0,
             partner_id INTEGER,
             uses_count INTEGER DEFAULT 0
         )
@@ -100,15 +116,13 @@ def init_db():
         )
     ''')
     conn.commit()
-    
-    # Test uchun hamkor promokod qo'shamiz (Bonus: 100 UC, 20% hamkorga tushadi)
-    cursor.execute("INSERT OR IGNORE INTO promo_codes (id, code, bonus, partner_id) VALUES (1, 'AIM2026', 100.0, 1)")
+    cursor.execute("INSERT OR IGNORE INTO promo_codes (id, code, bonus, partner_id) VALUES (1, 'AIM2026', 50.0, 1)")
     conn.commit()
     conn.close()
 
 init_db()
 
-# --- 20 TA CASE (30 UC dan 1000 UC gacha, katta yutqazish ehtimoli bilan 30+ buyum) ---
+# --- 20 TA CASE (30 UC dan 1000 UC gacha) ---
 PUBG_ICONS = [
     "https://cdn-icons-png.flaticon.com/512/3076/3076137.png",
     "https://cdn-icons-png.flaticon.com/512/1069/1069158.png",
@@ -129,21 +143,18 @@ CASE_NAMES = [
 CASES = {}
 for i in range(1, 21):
     case_key = f"case_{i}"
-    # Narxlar 30 UC dan boshlanib 1000 UC gacha boradi
     price = round(30.0 + (i - 1) * (970.0 / 19.0), 1)
-    
     items = []
-    # Har bir case ichida 32 ta buyum (Katta qismi arzon, ya'ni yutqazish ehtimoli katta)
     for j in range(1, 33):
         if j == 1:
-            tier = "Mythic (Super Rare)"
-            multiplier = random.uniform(2.0, 5.0) # Faqat bitta itemgina qimmatroq bo'lishi mumkin
-        elif j <= 5:
+            tier = "Mythic"
+            mult = random.uniform(2.0, 4.0)
+        elif j <= 6:
             tier = "Legendary"
-            multiplier = random.uniform(0.8, 1.3)
+            multiplier = random.uniform(0.7, 1.2)
         else:
             tier = "Loss/Common"
-            multiplier = random.uniform(0.1, 0.5) # Case narxidan bir necha barobar arzon (yutqazish)
+            multiplier = random.uniform(0.05, 0.4)
             
         items.append({
             "id": j,
@@ -151,7 +162,6 @@ for i in range(1, 21):
             "price": round(price * multiplier, 2),
             "img": PUBG_ICONS[j % len(PUBG_ICONS)]
         })
-    
     CASES[case_key] = {
         "id": case_key,
         "name": CASE_NAMES[i-1],
@@ -163,74 +173,136 @@ for i in range(1, 21):
 @app.route('/')
 def index():
     user = None
-    if 'user_uuid' in session:
+    if 'user_id' in session:
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE user_uuid = ?", (session['user_uuid'],))
+        cursor.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],))
         user = cursor.fetchone()
         conn.close()
     return render_template('index.html', user=user, cases=CASES)
 
-@app.route('/login/<provider>')
-def login(provider):
-    import uuid
-    fake_id = f"{provider}_{uuid.uuid4().hex[:8]}"
-    username = f"AimUser_{uuid.uuid4().hex[:4]}"
-    
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE user_uuid = ?", (fake_id,))
-    user = cursor.fetchone()
-    
-    if not user:
-        cursor.execute("INSERT INTO users (user_uuid, username, auth_provider, balance, demo_balance) VALUES (?, ?, ?, ?, ?)",
-                       (fake_id, username, provider, 500.0, 1000.0))
-        conn.commit()
-    
-    session['user_uuid'] = fake_id
-    conn.close()
-    return redirect(url_for('index'))
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username').strip()
+        password = generate_password_hash(request.form.get('password'))
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("INSERT INTO users (username, password, balance) VALUES (?, ?, ?)", (username, password, 100.0))
+            conn.commit()
+            session['user_id'] = cursor.lastrowid
+            return redirect(url_for('index'))
+        except sqlite3.IntegrityError:
+            return render_template('register.html', error="Bu username band!")
+        finally:
+            conn.close()
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username').strip()
+        password = request.form.get('password')
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+        user = cursor.fetchone()
+        conn.close()
+        
+        if user and check_password_hash(user['password'], password):
+            session['user_id'] = user['id']
+            return redirect(url_for('index'))
+        else:
+            return render_template('login.html', error="Login yoki parol noto'g'ri!")
+    return render_template('login.html')
 
 @app.route('/logout')
 def logout():
-    session.pop('user_uuid', None)
-    return redirect(url_for('index'))
+    session.pop('user_id', None)
+    return redirect(url_for('login'))
 
 @app.route('/api/topup', methods=['POST'])
 def topup_balance():
-    if 'user_uuid' not in session:
-        return jsonify({"success": False, "msg": "Kirmagansiz!"})
-    amount = float(request.form.get('amount', 0))
-    card_number = request.form.get('card', '5614686507631458')
+    if 'user_id' not in session:
+        return jsonify({"success": False, "msg": "Tizimga kirmagansiz!"})
     
-    if amount <= 0:
-        return jsonify({"success": False, "msg": "Noto'g'ri summa!"})
+    amount = float(request.form.get('amount', 0))
+    file = request.files.get('check_image')
+    
+    if amount <= 0 or not file:
+        return jsonify({"success": False, "msg": "Summa va chek rasmini kiritish majburiy!"})
+    
+    filename = secure_filename(f"{time.time()}_{file.filename}")
+    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
     
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE user_uuid = ?", (session['user_uuid'],))
+    cursor.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],))
     user = cursor.fetchone()
     
-    cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (amount, user['id']))
-    cursor.execute("INSERT INTO payments (user_id, amount, provider, card_number) VALUES (?, ?, ?, ?)", 
-                   (user['id'], amount, 'P2P Transfer', card_number))
+    cursor.execute("INSERT INTO payments (user_id, amount, card_number, check_image, status) VALUES (?, ?, ?, ?, ?)", 
+                   (user['id'], amount, '5614686507631458', filename, 'pending'))
     conn.commit()
     conn.close()
-    return jsonify({"success": True, "msg": f"{amount} UC kartaga o'tkazma orqali balansga qo'shildi!"})
+    
+    notify_telegram(f"🔔 **Yangi to'lov cheki!**\n👤 User: `{user['username']}`\n💰 Summa: `{amount} UC`\n📌 Admin `@JAXONORG` panelni tekshiring.")
+    return jsonify({"success": True, "msg": "So'rovingiz yuborildi! Admin tasdiqlashini kuting."})
+
+@app.route('/admin')
+def admin_panel():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT payments.*, users.username FROM payments JOIN users ON payments.user_id = users.id ORDER BY payments.id DESC")
+    payments = cursor.fetchall()
+    
+    cursor.execute("SELECT withdraws.*, users.username FROM withdraws JOIN users ON withdraws.user_id = users.id ORDER BY withdraws.id DESC")
+    withdraws = cursor.fetchall()
+    conn.close()
+    return render_template('admin.html', payments=payments, withdraws=withdraws)
+
+@app.route('/admin/approve_payment/<int:pid>', methods=['POST'])
+def approve_payment(pid):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM payments WHERE id = ?", (pid,))
+    p = cursor.fetchone()
+    
+    if not p or p['status'] == 'completed':
+        conn.close()
+        return jsonify({"success": False, "msg": "Topilmadi yoki bajarilgan!"})
+        
+    # Balansga qo'shish va total_deposited ni oshirish
+    cursor.execute("UPDATE users SET balance = balance + ?, total_deposited = total_deposited + ? WHERE id = ?", (p['amount'], p['amount'], p['user_id']))
+    cursor.execute("UPDATE payments SET status = 'completed' WHERE id = ?", (pid,))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "msg": "To'lov tasdiqlandi va balansga qo'shildi!"})
+
+@app.route('/admin/approve_withdraw/<int:wid>', methods=['POST'])
+def approve_withdraw(wid):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE withdraws SET status = 'completed' WHERE id = ?", (wid,))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "msg": "UC chiqarish bajarildi deb belgilandi!"})
 
 @app.route('/api/withdraw_uc', methods=['POST'])
 def withdraw_uc():
-    if 'user_uuid' not in session:
-        return jsonify({"success": False, "msg": "Kirmagansiz!"})
+    if 'user_id' not in session:
+        return jsonify({"success": False, "msg": "Tizimga kirmagansiz!"})
     pubg_id = request.form.get('pubg_id', '').strip()
     uc_amount = int(request.form.get('uc_amount', 0))
     
     if not pubg_id or uc_amount < 60:
-        return jsonify({"success": False, "msg": "Minimal UC yechish 60 UC va PUBG ID kiritilishi shart!"})
+        return jsonify({"success": False, "msg": "Minimal UC yechish 60 UC va PUBG ID shart!"})
         
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE user_uuid = ?", (session['user_uuid'],))
+    cursor.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],))
     user = cursor.fetchone()
     
     if user['balance'] < uc_amount:
@@ -241,11 +313,12 @@ def withdraw_uc():
     cursor.execute("INSERT INTO withdraws (user_id, pubg_id, uc_amount) VALUES (?, ?, ?)", (user['id'], pubg_id, uc_amount))
     conn.commit()
     conn.close()
-    return jsonify({"success": True, "msg": f"PUBG ID: {pubg_id} ga {uc_amount} UC chiqarishga yuborildi!"})
+    notify_telegram(f"📤 **Yangi UC yechish so'rovi!**\n👤 User: `{user['username']}`\n🆔 PUBG ID: `{pubg_id}`\n💎 Miqdor: `{uc_amount} UC`")
+    return jsonify({"success": True, "msg": f"PUBG ID: {pubg_id} ga {uc_amount} UC yechishga yuborildi. Kuting!"})
 
 @app.route('/api/open_case/<case_id>', methods=['POST'])
 def open_case(case_id):
-    if 'user_uuid' not in session:
+    if 'user_id' not in session:
         return jsonify({"success": False, "msg": "Tizimga kirmagansiz!"})
     if case_id not in CASES:
         return jsonify({"success": False, "msg": "Case topilmadi!"})
@@ -253,7 +326,7 @@ def open_case(case_id):
     case = CASES[case_id]
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE user_uuid = ?", (session['user_uuid'],))
+    cursor.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],))
     user = cursor.fetchone()
     
     if user['balance'] < case['price']:
@@ -262,8 +335,16 @@ def open_case(case_id):
     
     cursor.execute("UPDATE users SET balance = balance - ? WHERE id = ?", (case['price'], user['id']))
     
-    # Tasodifiy buyum tanlash
-    won_item = random.choice(case['items'])
+    # AQLLI SLIV VA BONUS MEXANIZMI:
+    # Agar foydalanuvchi kam donate qilgan bo'lsa (boshlanishiga biroz yutishi mumkin), 
+    # Ko'p donate qilgan bo'lsa (total_deposited > 300 UC) to'liq SLIV bo'ladi.
+    if user['total_deposited'] > 300:
+        # Og'ir sliv: faqat eng arzon loss buyumlaridan tanlanadi
+        loss_items = [it for it in case['items'] if "Loss" in it['name']]
+        won_item = random.choice(loss_items) if loss_items else random.choice(case['items'])
+    else:
+        # Boshlang'ich foydalanuvchiga biroz imkoniyat
+        won_item = random.choice(case['items'])
     
     cursor.execute("INSERT INTO inventory (user_id, item_name, item_image, item_price) VALUES (?, ?, ?, ?)",
                    (user['id'], won_item['name'], won_item['img'], won_item['price']))
@@ -273,13 +354,13 @@ def open_case(case_id):
 
 @app.route('/api/activate_promo', methods=['POST'])
 def activate_promo():
-    if 'user_uuid' not in session:
-        return jsonify({"success": False, "msg": "Avtorizatsiyadan o'ting!"})
+    if 'user_id' not in session:
+        return jsonify({"success": False, "msg": "Kirmagansiz!"})
     
     code = request.form.get('code', '').strip()
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE user_uuid = ?", (session['user_uuid'],))
+    cursor.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],))
     user = cursor.fetchone()
     
     cursor.execute("SELECT * FROM promo_codes WHERE code = ?", (code,))
@@ -289,7 +370,6 @@ def activate_promo():
         conn.close()
         return jsonify({"success": False, "msg": "Promo-kod topilmadi!"})
     
-    # 24 soatlik chekrovni tekshirish
     cursor.execute("SELECT * FROM promo_history WHERE user_id = ? AND promo_id = ? AND datetime(used_at, '+24 hours') > datetime('CURRENT_TIMESTAMP')",
                    (user['id'], promo['id']))
     if cursor.fetchone():
@@ -300,7 +380,6 @@ def activate_promo():
     cursor.execute("INSERT INTO promo_history (user_id, promo_id) VALUES (?, ?)", (user['id'], promo['id']))
     cursor.execute("UPDATE promo_codes SET uses_count = uses_count + 1 WHERE id = ?", (promo['id'],))
     
-    # Hamkor ulushi (20%)
     if promo['partner_id']:
         partner_bonus = promo['bonus'] * 0.20
         cursor.execute("UPDATE users SET balance = balance + ? WHERE id = ?", (partner_bonus, promo['partner_id']))
