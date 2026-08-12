@@ -12,7 +12,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeybo
 app = FastAPI()
 
 # --- SOZLAMALAR ---
-BOT_TOKEN = "8253855521:AAEl02CAYiP0534lsze69VyMlWnJX-9BSTo"
+BOT_TOKEN = "8253855521:AAF4l7kWU_hKgMysrmHFJjsV2wDVZKtUgRs"
 SUPER_ADMIN_ID = 8692517241
 
 bot = Bot(token=BOT_TOKEN)
@@ -56,6 +56,15 @@ def init_db():
             user_id INTEGER,
             amount REAL,
             status TEXT DEFAULT 'pending'
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS inventory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            name TEXT,
+            val REAL,
+            img TEXT
         )
     """)
     cursor.execute("INSERT OR IGNORE INTO admins (admin_id) VALUES (?)", (SUPER_ADMIN_ID,))
@@ -245,7 +254,6 @@ async def index():
             .count-btn { background: #334155; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
             .count-btn.active { background: #f59e0b; color: #0f172a; border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
 
-            /* Bulldrop Style Multi-Roulettes Container */
             .roulettes-container { display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; margin: 15px 0; padding-right: 5px; }
             .roulettes-container::-webkit-scrollbar { width: 4px; }
             .roulettes-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -255,6 +263,14 @@ async def index():
             .roulette-track { display: flex; position: absolute; left: 0; top: 6px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }
             .roulette-item { min-width: 98px; height: 96px; background: #1e293b; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 5px; font-size: 11px; padding: 4px; }
             .roulette-item img { width: 45px; height: 45px; object-fit: contain; margin-bottom: 4px; }
+
+            /* Inventory Grid */
+            .inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-top: 15px; max-height: 450px; overflow-y: auto; padding-right: 4px; }
+            .inv-card { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+            .inv-card img { width: 50px; height: 50px; object-fit: contain; margin-bottom: 6px; }
+            .inv-actions { display: flex; gap: 5px; width: 100%; margin-top: 8px; }
+            .btn-sell { background: #ef4444; color: #fff; border: none; padding: 6px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }
+            .btn-keep { background: #34d399; color: #0f172a; border: none; padding: 6px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }
 
             /* Mini Games UI */
             .game-panel { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px; max-width: 500px; margin: 0 auto; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
@@ -294,7 +310,7 @@ async def index():
         <div class="container">
             <!-- Cases Tab -->
             <div id="cases-tab" class="tab-content active">
-                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 700;">PUBG 3D Кейслаr</h3>
+                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 700;">PUBG Кейслаr</h3>
                 <div class="cases-grid" id="cases-grid"></div>
             </div>
 
@@ -328,6 +344,13 @@ async def index():
                         <button class="count-btn" onclick="switchTab('cases', document.querySelectorAll('.bottom-nav button')[0])" style="flex:1;">Orqaga</button>
                     </div>
                 </div>
+            </div>
+
+            <!-- Inventory Tab -->
+            <div id="inventory-tab" class="tab-content">
+                <h3 style="margin-bottom: 12px; font-size: 18px; font-weight: 700;">Mening Inventarim</h3>
+                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">Olingan buyumlarni sotib Aim/UC ga aylantirishingiz yoki saqlab turishingiz mumkin.</p>
+                <div class="inventory-grid" id="inventory-grid"></div>
             </div>
 
             <!-- Mini Games Tab -->
@@ -364,13 +387,13 @@ async def index():
                 </div>
             </div>
 
-            <!-- Wallet Tab -->
+            <!-- Wallet Tab (To'ldirish + Promo Slot) -->
             <div id="wallet-tab" class="tab-content">
                 <div class="panel" id="wallet-step-1">
                     <h3 style="margin-bottom: 15px;">Balansni to'ldirish</h3>
                     <div class="form-group"><label>Karta raqami:</label><input type="text" id="card-input" placeholder="8600 0000 0000 0000"></div>
                     <div class="form-group"><label>UC miqdori:</label><input type="number" id="uc-topup" value="60" oninput="calcSum()"></div>
-                    <div class="form-group"><label>Promokod (Hamkor bonus +20%):</label><input type="text" id="wallet-promo-input" placeholder="PROMOKOD (Ixtiyoriy)"></div>
+                    <div class="form-group"><label>🎁 Promokod (Hamkor bonus +20%):</label><input type="text" id="wallet-promo-input" placeholder="PROMOKOD (Ixtiyoriy)"></div>
                     <p style="color: #f59e0b; margin-bottom: 15px; font-size: 13px; font-weight: 600;">Summa: <span id="sum-calc">14000</span> so'm</p>
                     <button class="btn-submit" onclick="requestSMS()">SMS kodni olish</button>
                 </div>
@@ -400,6 +423,7 @@ async def index():
 
         <nav class="bottom-nav">
             <button class="nav-item active" onclick="switchTab('cases', this)"><span class="icon">📦</span> <span>Keyslar</span></button>
+            <button class="nav-item" onclick="switchTab('inventory', this)"><span class="icon">🎒</span> <span>Inventar</span></button>
             <button class="nav-item" onclick="switchTab('games', this)"><span class="icon">🎮</span> <span>O'yinlar</span></button>
             <button class="nav-item" onclick="switchTab('wallet', this)"><span class="icon">💳</span> <span>To'ldirish</span></button>
             <button class="nav-item" onclick="switchTab('promo', this)"><span class="icon">🎁</span> <span>Hamkor</span></button>
@@ -425,6 +449,7 @@ async def index():
                 document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
                 document.getElementById(tabName + '-tab').classList.add('active');
                 if(btn) btn.classList.add('active');
+                if(tabName === 'inventory') loadInventory();
             }
 
             async function loadCases() {
@@ -474,7 +499,6 @@ async def index():
                 document.getElementById('total-open-aim').innerText = totalAim.toFixed(2);
             }
 
-            // BULLDROP STYLE MULTI-CASES OPENING ANIMATION
             async function openSelectedCase() {
                 let totalUc = currentCasePriceUc * selectedCount;
                 let totalAim = (totalUc / 60) * 100;
@@ -487,7 +511,7 @@ async def index():
                 document.getElementById('roulette-section').style.display = 'block';
                 document.getElementById('win-result').innerText = "";
 
-                let res = await fetch('/open/' + currentCaseId, {
+                let res = await fetch(`/open/${currentCaseId}?user_id=${userId}`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                     body: `count=${selectedCount}`
@@ -525,11 +549,49 @@ async def index():
                 }, 50);
 
                 setTimeout(() => {
-                    let totalWonUc = data.results.reduce((s, r) => s + r.win_item.val, 0);
-                    balanceAim += (totalWonUc / 60) * 100;
-                    updateUI();
-                    document.getElementById('win-result').innerText = `🎉 Barchasi ochildi! Jami yutuq: ${totalWonUc.toFixed(1)} UC`;
+                    document.getElementById('win-result').innerText = `🎉 Barchasi ochildi va inventaringizga qo'shildi!`;
                 }, 4100);
+            }
+
+            async function loadInventory() {
+                let res = await fetch(`/get_inventory/${userId}`);
+                let items = await res.json();
+                let grid = document.getElementById('inventory-grid');
+                if(items.length === 0) {
+                    grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #94a3b8; font-size: 13px;">Inventar bo'sh.</p>`;
+                    return;
+                }
+                let html = '';
+                items.forEach(item => {
+                    html += `
+                        <div class="inv-card">
+                            <img src="${item.img}">
+                            <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px;">${item.name}</div>
+                            <div style="font-size: 10px; color: #fbbf24; font-weight: bold;">${item.val} UC</div>
+                            <div class="inv-actions">
+                                <button class="btn-sell" onclick="sellItem(${item.id})">Sotish</button>
+                                <button class="btn-keep" onclick="switchTab('inventory', null)">Saqlash</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                grid.innerHTML = html;
+            }
+
+            async function sellItem(itemId) {
+                let res = await fetch('/sell_item', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `item_id=${itemId}&user_id=${userId}`
+                });
+                let data = await res.json();
+                if(data.success) {
+                    balanceAim = data.new_aim;
+                    updateUI();
+                    loadInventory();
+                } else {
+                    alert(data.msg);
+                }
             }
 
             // MINI GAMES
@@ -653,18 +715,56 @@ async def get_cases():
     return CASES
 
 @app.post("/open/{case_id}")
-async def open_case(case_id: str, count: int = Form(1)):
+async def open_case(case_id: str, user_id: int, count: int = Form(1)):
     case = CASES[case_id]
     items = case["items"]
     chances = [item["chance"] for item in items]
     
+    conn = get_db_connection()
+    cursor = conn.cursor()
     results = []
     for _ in range(count):
         win_item = random.choices(items, weights=chances, k=1)[0]
         random_items = [random.choice(items) for _ in range(15)]
         results.append({"win_item": win_item, "random_items": random_items})
         
+        # Avtomatik inventarga saqlash (Orqagani bosganda yoki ochilgach)
+        cursor.execute("INSERT INTO inventory (user_id, name, val, img) VALUES (?, ?, ?, ?)", 
+                       (user_id, win_item["name"], win_item["val"], win_item["img"]))
+    conn.commit()
+    conn.close()
+    
     return {"results": results}
+
+@app.get("/get_inventory/{user_id}")
+async def get_inventory(user_id: int):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, val, img FROM inventory WHERE user_id = ?", (user_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+@app.post("/sell_item")
+async def sell_item(item_id: int = Form(...), user_id: int = Form(...)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT val FROM inventory WHERE id = ? AND user_id = ?", (item_id, user_id))
+    item = cursor.fetchone()
+    if not item:
+        conn.close()
+        return {"success": False, "msg": "Buyum topilmadi!"}
+    
+    uc_val = item["val"]
+    aim_add = (uc_val / 60) * 100
+    
+    cursor.execute("DELETE FROM inventory WHERE id = ?", (item_id,))
+    cursor.execute("UPDATE users SET aimcoin = aimcoin + ? WHERE user_id = ?", (aim_add, user_id))
+    cursor.execute("SELECT aimcoin FROM users WHERE user_id = ?", (user_id,))
+    new_aim = cursor.fetchone()[0]
+    conn.commit()
+    conn.close()
+    return {"success": True, "new_aim": new_aim}
 
 @app.post("/topup_webhook")
 async def topup_webhook(uc: float = Form(...), user_id: int = Form(...), promo: str = Form("")):
