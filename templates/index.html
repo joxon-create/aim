@@ -2,46 +2,46 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <title>AIMDROP.PUBG — Elite Gaming Ecosystem</title>
+    <title>AIMDROP.PUBG — Ultimate Gaming Ecosystem</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-color: #05070a;
-            --card-bg: #0d121f;
+            --bg-color: #030508;
+            --card-bg: #0b101d;
             --accent-gold: #f39c12;
-            --accent-glow: rgba(243, 156, 18, 0.4);
-            --border-color: #192238;
+            --accent-glow: rgba(243, 156, 18, 0.5);
+            --border-color: #172138;
             --neon-blue: #00ffcc;
         }
         body { background-color: var(--bg-color); color: #ffffff; font-family: 'Segoe UI', sans-serif; }
-        .navbar { background-color: #090e1a; border-bottom: 1px solid var(--border-color); backdrop-filter: blur(12px); }
-        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+        .navbar { background-color: #070b14; border-bottom: 1px solid var(--border-color); backdrop-filter: blur(12px); }
+        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; box-shadow: 0 10px 35px rgba(0,0,0,0.7); }
         
-        .case-card { transition: all 0.3s ease; cursor: pointer; position: relative; overflow: hidden; background: linear-gradient(155deg, #111827, #080c14); border: 1px solid #1f2d4a; }
-        .case-card:hover { transform: translateY(-8px); border-color: var(--accent-gold); box-shadow: 0 12px 30px var(--accent-glow); }
-        .aim-badge { position: absolute; top: 10px; right: 10px; background: rgba(243, 156, 18, 0.2); border: 1px solid var(--accent-gold); color: var(--accent-gold); font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 15px; letter-spacing: 1px; }
-        .case-footer-text { font-size: 11px; text-transform: uppercase; color: #ff4757; letter-spacing: 2px; font-weight: 900; margin-top: 4px; }
+        .case-card { transition: all 0.3s ease; cursor: pointer; position: relative; overflow: hidden; background: linear-gradient(155deg, #0f172a, #070b14); border: 1px solid #1e293b; }
+        .case-card:hover { transform: translateY(-8px); border-color: var(--accent-gold); box-shadow: 0 15px 35px var(--accent-glow); }
+        .aim-badge { position: absolute; top: 12px; right: 12px; background: rgba(243, 156, 18, 0.2); border: 1px solid var(--accent-gold); color: var(--accent-gold); font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px; letter-spacing: 1px; }
+        .case-footer-text { font-size: 11px; text-transform: uppercase; color: #ff4757; letter-spacing: 2px; font-weight: 900; margin-top: 5px; }
 
-        .btn-custom { background: linear-gradient(135deg, #f39c12, #d35400); color: white; font-weight: 800; border: none; border-radius: 10px; transition: 0.2s; text-transform: uppercase; }
-        .btn-custom:hover { background: linear-gradient(135deg, #e67e22, #b53e00); box-shadow: 0 0 15px var(--accent-glow); color: white; }
+        .btn-custom { background: linear-gradient(135deg, #f39c12, #d35400); color: white; font-weight: 800; border: none; border-radius: 12px; transition: 0.2s; text-transform: uppercase; }
+        .btn-custom:hover { background: linear-gradient(135deg, #e67e22, #b53e00); box-shadow: 0 0 20px var(--accent-glow); color: white; }
         
-        .ticker-wrap { background: #080c14; border-bottom: 1px solid var(--border-color); color: var(--accent-gold); padding: 8px 0; font-size: 13px; font-weight: 700; }
+        .ticker-wrap { background: #070b14; border-bottom: 1px solid var(--border-color); color: var(--accent-gold); padding: 8px 0; font-size: 13px; font-weight: 700; }
         
-        .roulette-container { display: flex; overflow: hidden; width: 100%; background: #030406; border: 2px solid var(--accent-gold); border-radius: 12px; padding: 8px 0; position: relative; justify-content: center; margin-bottom: 10px; }
-        .roulette-track { display: flex; transition: transform 4.5s cubic-bezier(0.08, 0.82, 0.17, 1); }
-        .roulette-item { min-width: 120px; height: 140px; background: #0f172a; margin: 0 4px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 8px; border: 2px solid #1e293b; }
-        .roulette-item img { width: 70px; height: 70px; object-fit: contain; }
-        .pointer { position: absolute; width: 3px; height: 100%; background: #ff4757; top: 0; z-index: 10; box-shadow: 0 0 12px #ff4757; }
+        /* Realistic Roulette Styling */
+        .roulette-container { display: flex; overflow: hidden; width: 100%; background: #020305; border: 2px solid var(--accent-gold); border-radius: 14px; padding: 12px 0; position: relative; justify-content: center; box-shadow: inset 0 0 25px rgba(0,0,0,0.9); }
+        .roulette-track { display: flex; transition: transform 5s cubic-bezier(0.08, 0.82, 0.17, 1); }
+        .roulette-item { min-width: 130px; height: 150px; background: #0f172a; margin: 0 5px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 10px; border: 2px solid #1e293b; }
+        .roulette-item img { width: 75px; height: 75px; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
+        .pointer { position: absolute; width: 4px; height: 100%; background: #ff4757; top: 0; z-index: 10; box-shadow: 0 0 15px #ff4757; }
         
         .nav-tabs .nav-link { color: #8892b0; font-weight: bold; border: none; border-bottom: 3px solid transparent; }
         .nav-tabs .nav-link.active { color: var(--accent-gold); background: transparent; border-bottom: 3px solid var(--accent-gold); }
         
-        .contract-slot { width: 90px; height: 90px; border: 2px dashed #334155; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #0b111e; transition: 0.2s; }
-        .contract-slot:hover { border-color: var(--accent-gold); }
-        
-        .mine-btn { width: 65px; height: 65px; background: #111827; border: 2px solid #334155; border-radius: 12px; font-size: 24px; color: white; transition: 0.2s; }
-        .mine-btn:hover { border-color: var(--neon-blue); background: #1e293b; }
+        /* Mines 5x5 Styling */
+        .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 380px; margin: 0 auto; }
+        .mine-btn { aspect-ratio: 1; background: #0f172a; border: 2px solid #1e293b; border-radius: 12px; font-size: 22px; color: var(--accent-gold); transition: 0.2s; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .mine-btn:hover { border-color: var(--neon-blue); background: #1e293b; transform: scale(1.05); }
     </style>
 </head>
 <body>
@@ -60,31 +60,23 @@
                 <a href="#profileModal" data-bs-toggle="modal" class="btn btn-sm btn-outline-light me-2 fw-bold"><i class="fa-solid fa-wallet me-1"></i> Moliya</a>
                 <a href="/logout" class="btn btn-sm btn-danger fw-bold"><i class="fa-solid fa-right-from-bracket"></i></a>
             {% else %}
-                <a href="/login" class="btn btn-sm btn-warning me-2 fw-bold px-3">Kirish</a>
-                <a href="/register" class="btn btn-sm btn-outline-light fw-bold px-3">Google orqali kirish</a>
+                <a href="/register" class="btn btn-sm btn-warning me-2 fw-bold px-3">Google orqali kirish</a>
             {% endif %}
         </div>
     </nav>
 
     <div class="container my-4">
         {% if user and not user.telegram_id %}
-        <!-- TELEGRAM ULASH VA KANALGA OBUNA -->
         <div class="card p-4 mb-4 border-info shadow text-center bg-gradient">
-            <h4 class="text-info fw-bold mb-2"><i class="fa-brands fa-telegram me-2"></i>Telegram Akkauntni Bog'lash va Kanalga Obuna</h4>
-            <p class="text-secondary mb-3">Saytdan to'liq foydalanish va bepul case ochish uchun Telegram akkauntingizni ulang va <a href="https://t.me/aimdroppubg" target="_blank" class="text-warning fw-bold">@aimdroppubg</a> kanaliga obuna bo'ling!</p>
-            <div class="d-flex justify-content-center gap-3">
-                <a href="https://t.me/aimdroppubg" target="_blank" class="btn btn-info fw-bold px-4 py-2"><i class="fa-brands fa-telegram me-1"></i> Kanalga Obuna Bo'lish</a>
-                <button class="btn btn-custom px-4 py-2" onclick="linkTelegramAccount()"><i class="fa-solid fa-link me-1"></i> Telegramni Bog'lash</button>
-            </div>
+            <h4 class="text-info fw-bold mb-2"><i class="fa-brands fa-telegram me-2"></i>Telegram Akkauntni Bog'lash & Kanalga Obuna</h4>
+            <p class="text-secondary mb-3">Bepul case ochish va to'liq tizimdan foydalanish uchun <a href="https://t.me/aimdroppubg" target="_blank" class="text-warning fw-bold">@aimdroppubg</a> kanaliga obuna bo'ling!</p>
+            <button class="btn btn-custom px-4 py-2" onclick="linkTelegramAccount()"><i class="fa-solid fa-link me-1"></i> Telegramni Bog'lash</button>
         </div>
         {% endif %}
 
-        <!-- NAVIGATION TABS (CASES, CONTRACT, UPGRADE, MINES) -->
         <ul class="nav nav-tabs mb-4 justify-content-center fs-5" id="gameTabs" role="tablist">
             <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#casesTab"><i class="fa-solid fa-box-open me-2"></i>Caselar</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#contractTab"><i class="fa-solid fa-file-contract me-2"></i>Contract</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#upgradeTab"><i class="fa-solid fa-arrow-trend-up me-2"></i>Upgrade</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#minesTab"><i class="fa-solid fa-bomb me-2"></i>Mines</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#minesTab"><i class="fa-solid fa-bomb me-2"></i>Mines (5x5)</button></li>
         </ul>
 
         <div class="tab-content">
@@ -96,7 +88,7 @@
                     <div class="col-md-3 mb-4">
                         <div class="card case-card p-3 text-center h-100 shadow" onclick="openCaseModal('{{ key }}', '{{ case.name }}', {{ case.price }}, '{{ case.img }}')">
                             <div class="aim-badge">AIM</div>
-                            <img src="{{ case.img }}" class="mx-auto my-3" style="width: 90px; height: 90px; object-fit: contain;">
+                            <img src="{{ case.img }}" class="mx-auto my-3" style="width: 100px; height: 100px; object-fit: contain;">
                             <h5 class="fw-bold text-white mb-1">{{ case.name }}</h5>
                             <div class="case-footer-text">AIM SYSTEM</div>
                             <p class="text-success fw-bold fs-5 mt-2 mb-3">{% if case.price == 0 %}Bepul (24s){% else %}{{ case.price }} UC{% endif %}</p>
@@ -107,45 +99,20 @@
                 </div>
             </div>
 
-            <!-- CONTRACT TAB -->
-            <div class="tab-pane fade" id="contractTab">
-                <div class="card p-4 shadow border-warning border-opacity-25 text-center">
-                    <h3 class="text-warning fw-bold mb-2"><i class="fa-solid fa-file-contract me-2"></i>Item Contract (3 tadan 10 tagacha)</h3>
-                    <p class="text-secondary mb-4">Inventaringizdagi keraksiz buyumlarni tanlang (min 3 ta, max 10 ta) va ularni yanada qimmatroq bitta yangi buyumga almashtiring!</p>
-                    <div class="d-flex justify-content-center gap-2 flex-wrap mb-4" id="contractSlotsContainer">
-                        <!-- Slots generated via JS -->
-                    </div>
-                    <button class="btn btn-custom px-5 py-3 fw-bold fs-5" onclick="executeContract()">Contractni Boshlash</button>
-                </div>
-            </div>
-
-            <!-- UPGRADE TAB -->
-            <div class="tab-pane fade" id="upgradeTab">
-                <div class="card p-4 shadow border-info border-opacity-25 text-center col-md-8 mx-auto">
-                    <h3 class="text-info fw-bold mb-2"><i class="fa-solid fa-arrow-trend-up me-2"></i>Skin Upgrade (Realistic Aim Engine)</h3>
-                    <p class="text-secondary mb-4">Kichik upgrade'larda omad kelishi, yirik upgrade'larda esa strategik sliv bo'lishi mumkin!</p>
-                    <div class="mb-3 text-start">
-                        <label class="form-label text-secondary">Inventaringizdan buyum tanlang:</label>
-                        <select id="upgradeItemSelect" class="form-control bg-black text-white border-secondary py-2"></select>
-                    </div>
-                    <div class="mb-3 text-start">
-                        <label class="form-label text-secondary">Maqsadli (Qimmatroq) buyum qiymati (UC):</label>
-                        <input type="number" id="targetPriceInput" class="form-control bg-black text-white border-secondary py-2" placeholder="Masalan: 150">
-                    </div>
-                    <button class="btn btn-custom w-100 fw-bold py-3 fs-5" onclick="executeUpgrade()">Upgradeni Boshlash</button>
-                </div>
-            </div>
-
-            <!-- MINES TAB -->
+            <!-- MINES TAB (5x5, 3 mines, up to 500x Sliv engine) -->
             <div class="tab-pane fade" id="minesTab">
                 <div class="card p-4 shadow border-danger border-opacity-25 text-center col-md-8 mx-auto">
-                    <h3 class="text-danger fw-bold mb-2"><i class="fa-solid fa-bomb me-2"></i>Mines Mini-O'yini</h3>
-                    <p class="text-secondary mb-4">Maydondagi xavfsiz kataklarni oching va koeffitsiyentni oshiring!</p>
-                    <div class="d-flex justify-content-center gap-3 mb-3">
-                        <input type="number" id="mineBet" class="form-control bg-black text-white border-secondary w-50 text-center" placeholder="Tikish (UC)" value="10">
-                        <button class="btn btn-custom px-4" onclick="startMinesGame()">O'yinni Boshlash</button>
+                    <h3 class="text-danger fw-bold mb-2"><i class="fa-solid fa-bomb me-2"></i>AIM Mines (5x5 Arena)</h3>
+                    <p class="text-secondary mb-2">3 ta yashirin mina. AIM coinlarni topib koefisiyentni oshiring (Maksimal 500x, lekin ehtiyot bo'ling — sliv bor!)</p>
+                    <div class="d-flex justify-content-center align-items-center gap-3 mb-3">
+                        <input type="number" id="mineBet" class="form-control bg-black text-white border-secondary w-25 text-center" value="10" placeholder="UC">
+                        <button class="btn btn-custom px-4 py-2" onclick="startMinesGame()">O'yinni Boshlash</button>
+                        <span class="text-warning fw-bold fs-5">Koeefisiyent: <span id="mineMultiplier">1.00</span>x</span>
                     </div>
-                    <div class="d-grid gap-2 d-flex justify-content-center flex-wrap" id="minesGrid" style="max-width: 350px; margin: 0 auto;"></div>
+                    <div class="mines-grid" id="minesGridContainer">
+                        <!-- 25 cells will be generated here -->
+                    </div>
+                    <button class="btn btn-success fw-bold px-5 py-2 mt-3 d-none" id="cashoutBtn" onclick="cashoutMines()">Yutuqni Olish</button>
                 </div>
             </div>
         </div>
@@ -163,19 +130,19 @@
                     <img id="modalCaseImg" src="" style="width: 120px; height: 120px; object-fit: contain;" class="mb-3">
                     <h3 class="text-success fw-bold mb-4" id="modalCasePrice">0 UC</h3>
                     <button class="btn btn-custom btn-lg w-100 fw-bold py-3 fs-5 shadow" onclick="startOpening()">
-                        CASE-NI OCHISH
+                        CASE-NI OCHISH (RULETKA)
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- RUROLETKA ANIMATSIYA MODALI -->
+    <!-- RULETKA ANIMATSIYA MODALI -->
     <div class="modal fade" id="openingModal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content bg-dark text-white border-warning shadow-lg">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-rotate fa-spin me-2"></i>AIM Ruletka ishga tushdi...</h5>
+                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-rotate fa-spin me-2"></i>AIM Ruletka Aylanmoqda...</h5>
                 </div>
                 <div class="modal-body text-center py-4">
                     <div class="roulette-container">
@@ -204,49 +171,12 @@
         </div>
     </div>
 
-    <!-- REFERAL MODALI -->
+    <!-- REFERAL & MOLIYA MODALLARI -->
     <div class="modal fade" id="referralModal" tabindex="-1">
         <div class="modal-dialog modal-md">
-            <div class="modal-content bg-dark text-white border-warning shadow-lg">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-users me-2"></i>Do'stlarni Taklif Qilish</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center p-4">
-                    <p class="text-secondary">Har bir taklif qilingan do'st uchun <b class="text-success">20 UC</b> bonus oling!</p>
-                    <div class="input-group mb-3">
-                        <input type="text" id="refLink" class="form-control bg-black text-white border-secondary text-center" readonly value="https://aimdrop.uz/register?ref={% if user %}{{ user.id }}{% endif %}">
-                        <button class="btn btn-warning fw-bold" onclick="copyRefLink()">Nusxalash</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MOLIYA MODALI -->
-    <div class="modal fade" id="profileModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content bg-dark text-white border-warning shadow-lg">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-wallet me-2"></i>Balansni To'ldirish & Yechish</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-warning mb-4">
-                        💳 Karta orqali to'ldirish: <code class="fs-5 text-dark bg-warning px-3 py-1 rounded fw-bold ms-1">5614 6865 0763 1458</code>
-                    </div>
-                    <form onsubmit="submitTopup(event)">
-                        <div class="mb-3">
-                            <label class="form-label text-secondary">Summa (UC)</label>
-                            <input type="number" id="topupAmount" class="form-control bg-black text-white border-secondary py-2" required placeholder="Masalan: 200">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-secondary">Chek rasmi</label>
-                            <input type="file" id="checkFile" class="form-control bg-black text-white border-secondary py-2" accept="image/*" required>
-                        </div>
-                        <button type="submit" class="btn btn-success w-100 fw-bold py-2">Adminga Yuborish</button>
-                    </form>
-                </div>
+            <div class="modal-content bg-dark text-white border-warning shadow-lg p-4 text-center">
+                <h5 class="text-warning fw-bold mb-3">Referal Tizimi</h5>
+                <p class="text-secondary">Do'stlaringizni taklif qiling va har biri uchun 20 UC oling!</p>
             </div>
         </div>
     </div>
@@ -254,16 +184,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
         let selectedCaseKey = '';
-        let casePricePerOne = 0;
 
         function openCaseModal(key, name, price, img) {
             selectedCaseKey = key;
-            casePricePerOne = price;
             document.getElementById('modalCaseName').innerText = name;
             document.getElementById('modalCasePrice').innerText = price === 0 ? 'Bepul Case (Har 24 soatda)' : price + ' UC';
             document.getElementById('modalCaseImg').src = img;
-            let modal = new bootstrap.Modal(document.getElementById('caseDetailModal'));
-            modal.show();
+            new bootstrap.Modal(document.getElementById('caseDetailModal')).show();
         }
 
         function startOpening() {
@@ -285,82 +212,94 @@
             let track = document.getElementById('rouletteTrack');
             track.style.transition = 'none';
             track.style.transform = 'translateX(0px)';
+            document.getElementById('resultText').innerText = '';
+            document.getElementById('closeModalBtn').classList.add('d-none');
             
             let trackHtml = '';
-            for(let i = 0; i < 30; i++) {
+            for(let i = 0; i < 35; i++) {
                 let randItem = itemsList[Math.floor(Math.random() * itemsList.length)];
                 trackHtml += `<div class="roulette-item"><img src="${randItem.img}"><small class="text-truncate w-100 text-light fw-bold">${randItem.name}</small><span class="text-success small">${randItem.price} UC</span></div>`;
             }
             trackHtml += `<div class="roulette-item border-warning bg-warning bg-opacity-10"><img src="${winningItem.img}"><small class="text-truncate w-100 text-warning fw-bold">${winningItem.name}</small><span class="text-success fw-bold">${winningItem.price} UC</span></div>`;
-            for(let i = 0; i < 15; i++) {
+            for(let i = 0; i < 20; i++) {
                 let randItem = itemsList[Math.floor(Math.random() * itemsList.length)];
                 trackHtml += `<div class="roulette-item"><img src="${randItem.img}"><small class="text-truncate w-100 text-light fw-bold">${randItem.name}</small><span class="text-success small">${randItem.price} UC</span></div>`;
             }
             track.innerHTML = trackHtml;
             
             setTimeout(() => {
-                track.style.transition = 'transform 4.5s cubic-bezier(0.08, 0.82, 0.17, 1)';
-                track.style.transform = 'translateX(-3000px)';
-            }, 50);
+                track.style.transition = 'transform 5s cubic-bezier(0.08, 0.82, 0.17, 1)';
+                track.style.transform = 'translateX(-3500px)';
+            }, 60);
             
             setTimeout(() => {
                 document.getElementById('resultText').innerText = `🎉 Tabriklaymiz! Siz yutib oldingiz: ${winningItem.name} (${winningItem.price} UC)`;
                 document.getElementById('closeModalBtn').classList.remove('d-none');
-            }, 4800);
+            }, 5100);
+        }
+
+        // MINES 5x5 LOGIC
+        function startMinesGame() {
+            let container = document.getElementById('minesGridContainer');
+            container.innerHTML = '';
+            document.getElementById('mineMultiplier').innerText = '1.00';
+            document.getElementById('cashoutBtn').classList.remove('d-none');
+            
+            for(let i = 0; i < 25; i++) {
+                let btn = document.createElement('button');
+                btn.className = 'mine-btn';
+                btn.innerHTML = '<i class="fa-solid fa-question"></i>';
+                btn.onclick = () => clickMineCell(btn);
+                container.appendChild(btn);
+            }
+        }
+
+        let currentMultiplier = 1.00;
+        function clickMineCell(btn) {
+            if(btn.dataset.clicked) return;
+            btn.dataset.clicked = true;
+            
+            // 3 ta mina bormi yoki sliv (500x ga yetib bo'lmaydi)
+            let isMine = Math.random() < 0.22; // Sliv ehtimoli
+            if(isMine) {
+                btn.innerHTML = '<i class="fa-solid fa-bomb text-danger"></i>';
+                btn.style.background = '#450a0a';
+                alert('💥 Afsus, mina portladi! Sliv bo\'ldi.');
+                document.getElementById('cashoutBtn').classList.add('d-none');
+                let btns = document.querySelectorAll('.mine-btn');
+                btns.forEach(b => b.disabled = true);
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-coins text-warning"></i>';
+                btn.style.background = '#064e3b';
+                currentMultiplier = parseFloat((currentMultiplier * 1.35).toFixed(2));
+                if(currentMultiplier > 500) currentMultiplier = 500;
+                document.getElementById('mineMultiplier').innerText = currentMultiplier;
+            }
+        }
+
+        function cashoutMines() {
+            alert(`🏆 Muvaffaqiyatli yakunlandi! Koefisiyent: ${currentMultiplier}x`);
+            location.reload();
         }
 
         function linkTelegramAccount() {
             let tId = prompt("Telegram ID raqamingizni kiriting:");
             if(!tId) return;
-            let formData = new FormData();
-            formData.append('telegram_id', tId);
-            fetch('/api/link_telegram', { method: 'POST', body: formData }).then(res => res.json()).then(data => {
-                alert(data.msg);
-                location.reload();
-            });
+            let fd = new FormData();
+            fd.append('telegram_id', tId);
+            fetch('/api/link_telegram', { method: 'POST', body: fd }).then(res => res.json()).then(data => { alert(data.msg); location.reload(); });
         }
 
         function loadInventory() {
             fetch('/api/inventory').then(res => res.json()).then(data => {
                 let list = document.getElementById('inventoryItemsList');
-                if(data.items.length === 0) {
-                    list.innerHTML = '<p class="text-center text-secondary py-5 fs-5">Inventaringiz hozircha bo\'sh.</p>';
-                    return;
-                }
+                if(data.items.length === 0) { list.innerHTML = '<p class="text-center text-secondary py-5 fs-5">Inventar bo\'sh.</p>'; return; }
                 let html = '';
                 data.items.forEach(item => {
-                    html += `
-                        <div class="col-md-3 mb-3">
-                            <div class="card p-3 text-center h-100 border-secondary bg-black bg-opacity-45">
-                                <img src="${item.item_image}" style="width: 75px; height: 75px; object-fit: contain;" class="mx-auto mb-2">
-                                <h6 class="text-truncate text-white fw-bold mb-1">${item.item_name}</h6>
-                                <p class="text-success fw-bold mb-2">${item.item_price} UC</p>
-                                <button class="btn btn-sm btn-outline-warning mt-auto fw-bold py-1" onclick="sellItem(${item.id})">Sotish</button>
-                            </div>
-                        </div>
-                    `;
+                    html += `<div class="col-md-3 mb-3"><div class="card p-3 text-center h-100 border-secondary bg-black"><img src="${item.item_image}" style="width: 75px; height: 75px; object-fit: contain;" class="mx-auto mb-2"><h6 class="text-white fw-bold">${item.item_name}</h6><p class="text-success fw-bold">${item.item_price} UC</p></div></div>`;
                 });
                 list.innerHTML = html;
             });
-        }
-
-        function sellItem(itemId) {
-            fetch('/api/sell_item/' + itemId, { method: 'POST' }).then(res => res.json()).then(data => { alert(data.msg); loadInventory(); });
-        }
-
-        function submitTopup(event) {
-            event.preventDefault();
-            let formData = new FormData();
-            formData.append('amount', document.getElementById('topupAmount').value);
-            formData.append('check_image', document.getElementById('checkFile').files[0]);
-            fetch('/api/topup', { method: 'POST', body: formData }).then(res => res.json()).then(data => { alert(data.msg); location.reload(); });
-        }
-
-        function copyRefLink() {
-            let copyText = document.getElementById("refLink");
-            copyText.select();
-            navigator.clipboard.writeText(copyText.value);
-            alert("Referal havola nusxalandi!");
         }
     </script>
 </body>
