@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>Kirish - AimDrop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        body { background-color: #0b0f19; color: #fff; font-family: sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .card { background-color: #161d2e; border: 1px solid #222e45; border-radius: 12px; width: 100%; max-width: 400px; }
+        .btn-custom { background: linear-gradient(45deg, #f39c12, #e67e22); color: white; font-weight: bold; border: none; }
+    </style>
+</head>
+<body>
+    <div class="card p-4 shadow-lg">
+        <h3 class="text-center text-warning mb-4">AimDrop - Tizimga kirish</h3>
+        {% if error %}
+            <div class="alert alert-danger py-2">{{ error }}</div>
+        {% endif %}
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" class="form-control bg-secondary text-white border-0" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Parol</label>
+                <input type="password" name="password" class="form-control bg-secondary text-white border-0" required>
+            </div>
+            <button type="submit" class="btn btn-custom w-100 mb-3">Kirish</button>
+            <p class="text-center mb-0">Akkauntingiz yo'qmi? <a href="/register" class="text-warning">Ro'yxatdan o'tish</a></p>
+        </form>
+    </div>
+</body>
+</html>
