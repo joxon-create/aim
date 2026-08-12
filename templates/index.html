@@ -2,63 +2,60 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <title>AIMDROP.PUBG — Premium Case Opening & Crash</title>
+    <title>AIMDROP.PUBG — Elite Gaming Ecosystem</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --card-bg: #121826;
+            --bg-color: #07090f;
+            --card-bg: #0f1423;
             --accent-gold: #f39c12;
-            --accent-glow: rgba(243, 156, 18, 0.4);
-            --border-color: #1f293d;
+            --accent-glow: rgba(243, 156, 18, 0.5);
+            --border-color: #1a233a;
+            --neon-blue: #00ffcc;
         }
-        body { background-color: var(--bg-color); color: #ffffff; font-family: 'Rajdhani', 'Segoe UI', sans-serif; }
-        .navbar { background-color: #0d121d; border-bottom: 1px solid var(--border-color); }
-        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; backdrop-filter: blur(10px); }
+        body { background-color: var(--bg-color); color: #ffffff; font-family: 'Segoe UI', sans-serif; }
+        .navbar { background-color: #0b101b; border-bottom: 1px solid var(--border-color); backdrop-filter: blur(10px); }
+        .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 18px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
         
-        /* Case Cards Modern Style */
-        .case-card { transition: all 0.3s ease; cursor: pointer; position: relative; overflow: hidden; background: linear-gradient(145deg, #121826, #1a233a); }
-        .case-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); transition: 0.5s; }
-        .case-card:hover::before { left: 100%; }
-        .case-card:hover { transform: translateY(-8px); border-color: var(--accent-gold); box-shadow: 0 12px 30px var(--accent-glow); }
+        /* Case Card with AIM branding */
+        .case-card { transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; position: relative; overflow: hidden; background: linear-gradient(160deg, #101626, #090d16); border: 1px solid #233150; }
+        .case-card:hover { transform: translateY(-10px); border-color: var(--accent-gold); box-shadow: 0 15px 35px var(--accent-glow); }
+        .aim-badge { position: absolute; top: 12px; right: 12px; background: rgba(243, 156, 18, 0.15); border: 1px solid var(--accent-gold); color: var(--accent-gold); font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px; letter-spacing: 1px; }
+        .case-footer-text { font-size: 12px; text-transform: uppercase; color: #ff4757; letter-spacing: 2px; font-weight: 900; margin-top: 5px; }
+
+        .free-case-card { border: 2px dashed var(--neon-blue); background: linear-gradient(145deg, #0e1a24, #081015); }
+        .crash-box { font-size: 60px; font-weight: 900; color: var(--neon-blue); text-shadow: 0 0 25px rgba(0,255,204,0.5); font-family: monospace; }
+        .btn-custom { background: linear-gradient(135deg, #f39c12, #d35400); color: white; font-weight: 800; border: none; border-radius: 12px; transition: 0.25s; text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-custom:hover { background: linear-gradient(135deg, #e67e22, #b53e00); box-shadow: 0 0 20px var(--accent-glow); color: white; transform: scale(1.02); }
         
-        .crash-box { font-size: 56px; font-weight: 800; color: #00ffcc; text-shadow: 0 0 20px rgba(0,255,204,0.4); letter-spacing: 2px; }
-        .btn-custom { background: linear-gradient(135deg, #f39c12, #e67e22); color: white; font-weight: bold; border: none; border-radius: 10px; transition: 0.2s; }
-        .btn-custom:hover { background: linear-gradient(135deg, #e67e22, #d35400); box-shadow: 0 0 15px var(--accent-glow); color: white; }
+        .ticker-wrap { background: #090d16; border-bottom: 1px solid var(--border-color); color: var(--accent-gold); padding: 10px 0; font-size: 14px; font-weight: 700; }
         
-        .ticker-wrap { background: #0d121d; border-bottom: 1px solid var(--border-color); color: var(--accent-gold); padding: 10px 0; font-size: 14px; font-weight: 600; }
-        
-        /* Roulette Styles */
-        .roulette-container { display: flex; overflow: hidden; width: 100%; background: #070a10; border: 2px solid var(--accent-gold); border-radius: 14px; padding: 15px 0; position: relative; justify-content: center; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
-        .roulette-track { display: flex; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }
-        .roulette-item { min-width: 140px; height: 160px; background: #162032; margin: 0 6px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 12px; border: 2px solid #23314a; position: relative; }
-        .roulette-item img { width: 80px; height: 80px; object-fit: contain; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
+        /* Multi Roulette styling */
+        .roulette-container { display: flex; overflow: hidden; width: 100%; background: #05070c; border: 2px solid var(--accent-gold); border-radius: 14px; padding: 10px 0; position: relative; justify-content: center; margin-bottom: 12px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
+        .roulette-track { display: flex; transition: transform 4.5s cubic-bezier(0.08, 0.82, 0.17, 1); }
+        .roulette-item { min-width: 130px; height: 150px; background: #131a29; margin: 0 5px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 10px; border: 2px solid #22324f; }
+        .roulette-item img { width: 75px; height: 75px; object-fit: contain; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
         .pointer { position: absolute; width: 4px; height: 100%; background: #ff4757; top: 0; z-index: 10; box-shadow: 0 0 15px #ff4757; }
         
-        .count-btn { border: 2px solid var(--border-color); background: #121826; color: white; font-weight: bold; border-radius: 10px; padding: 10px 18px; transition: 0.2s; }
-        .count-btn.active, .count-btn:hover { background: var(--accent-gold); border-color: var(--accent-gold); color: white; box-shadow: 0 0 10px var(--accent-glow); }
-        
-        .badge-tier { font-size: 10px; padding: 3px 8px; border-radius: 6px; font-weight: bold; text-transform: uppercase; }
-        .tier-mythic { background: #ff4757; color: white; box-shadow: 0 0 10px rgba(255,71,87,0.5); }
-        .tier-legendary { background: #ffa502; color: white; }
-        .tier-epic { background: #9b59b6; color: white; }
+        .count-btn { border: 2px solid var(--border-color); background: #101626; color: white; font-weight: bold; border-radius: 10px; padding: 8px 16px; }
+        .count-btn.active, .count-btn:hover { background: var(--accent-gold); border-color: var(--accent-gold); color: white; }
     </style>
 </head>
 <body>
     <div class="ticker-wrap">
-        <marquee scrollamount="6">🔥 Real Vaqt Yutuqlari: <b>Jaxon_VIP</b> <span class="text-success">Glacier M416 (850 UC)</span> yutdi! | <b>Uz_Player</b> <span class="text-success">Pharaoh X-Suit</span> qo'lga kiritdi!</marquee>
+        <marquee scrollamount="6">🔥 AIMDROP SYSTEM: <b>Jaxon_VIP</b> <span class="text-success">Glacier M416 (25 UC)</span> yutib oldi! | <b>PUBG_King</b> <span class="text-success">Pharaoh X-Suit</span> qo'lga kiritdi!</marquee>
     </div>
 
     <nav class="navbar navbar-expand-lg navbar-dark px-4 py-3">
-        <a class="navbar-brand fw-bold fs-4 text-warning" href="/"><i class="fa-solid fa-gamepad me-2"></i>AIMDROP.<span class="text-white">PUBG</span></a>
+        <a class="navbar-brand fw-bold fs-4 text-warning" href="/"><i class="fa-solid fa-crosshairs me-2"></i>AIMDROP.<span class="text-white">PUBG</span></a>
         <div class="ms-auto d-flex align-items-center">
             {% if user %}
                 <span class="me-3 text-secondary">ID: <b class="text-white">{{ user.username }}</b></span>
                 <span class="me-3 text-success bg-success bg-opacity-10 px-3 py-1 rounded-pill border border-success border-opacity-25">Balans: <b id="userBalance">{{ user.balance }}</b> UC</span>
                 <button class="btn btn-sm btn-outline-info me-2 fw-bold" data-bs-toggle="modal" onclick="loadInventory()" data-bs-target="#inventoryModal"><i class="fa-solid fa-backpack me-1"></i> Inventar</button>
-                <button class="btn btn-sm btn-outline-success me-2 fw-bold" onclick="claimDaily()"><i class="fa-solid fa-gift me-1"></i> Bonus</button>
-                <a href="#profileModal" data-bs-toggle="modal" class="btn btn-sm btn-outline-warning me-2 fw-bold"><i class="fa-solid fa-wallet me-1"></i> Moliya</a>
+                <button class="btn btn-sm btn-outline-warning me-2 fw-bold" data-bs-toggle="modal" data-bs-target="#referralModal"><i class="fa-solid fa-users me-1"></i> Referal</button>
+                <a href="#profileModal" data-bs-toggle="modal" class="btn btn-sm btn-outline-light me-2 fw-bold"><i class="fa-solid fa-wallet me-1"></i> Moliya</a>
                 <a href="/logout" class="btn btn-sm btn-danger fw-bold"><i class="fa-solid fa-right-from-bracket"></i></a>
             {% else %}
                 <a href="/login" class="btn btn-sm btn-warning me-2 fw-bold px-3">Kirish</a>
@@ -68,10 +65,10 @@
     </nav>
 
     <div class="container my-4">
-        <!-- LIVE CRASH O'YINI -->
+        <!-- CRASH O'YINI -->
         <div class="row mb-4">
             <div class="col-md-8 mx-auto">
-                <div class="card p-4 text-center shadow-lg border-info border-opacity-25">
+                <div class="card p-4 text-center shadow-lg border-info border-opacity-25 bg-gradient">
                     <h5 class="text-info fw-bold mb-2"><i class="fa-solid fa-chart-line me-2"></i>Live Crash Multiplier</h5>
                     <div class="crash-box" id="multiplier">1.00x</div>
                     <p id="status-text" class="text-warning fw-bold mt-2 mb-0">O'yin boshlanishini kuting...</p>
@@ -79,9 +76,24 @@
             </div>
         </div>
 
+        <!-- KUNLIK BEPUL CASE (KANALGA OBUNA) -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card free-case-card p-4 text-center shadow">
+                    <span class="aim-badge" style="top:20px; right:20px;">AIM FREE</span>
+                    <h3 class="text-info fw-bold mb-2"><i class="fa-brands fa-telegram me-2"></i>Kunlik Bepul Case (@aimdroppubg)</h3>
+                    <p class="text-secondary mb-3">Ochish uchun Telegram kanalimizga obuna bo'ling: <a href="https://t.me/aimdroppubg" target="_blank" class="text-warning fw-bold">@aimdroppubg</a> (Maksimal yutuq: 25 UC, Eng kami: 0.15 UC)</p>
+                    <div>
+                        <button class="btn btn-info fw-bold px-4 py-2 me-2" onclick="window.open('https://t.me/aimdroppubg', '_blank')"><i class="fa-brands fa-telegram me-1"></i> Kanalga o'tish</button>
+                        <button class="btn btn-custom px-5 py-2 fw-bold" onclick="openFreeDailyCase()"><i class="fa-solid fa-box-open me-1"></i> Bepul Case-ni Ochish</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- PROMO-KOD -->
         <div class="card p-4 mb-4 shadow border-warning border-opacity-25">
-            <h5 class="text-warning fw-bold mb-3"><i class="fa-solid fa-ticket me-2"></i>Promo-kod orqali bepul UC oling</h5>
+            <h5 class="text-warning fw-bold mb-3"><i class="fa-solid fa-ticket me-2"></i>Promo-kod orqali bonus olish</h5>
             <div class="input-group">
                 <input type="text" id="promoCodeInput" class="form-control bg-dark text-white border-secondary py-2" placeholder="Masalan: AIM2026">
                 <button class="btn btn-custom px-4" onclick="activatePromo()">Faollashtirish</button>
@@ -94,12 +106,11 @@
             {% for key, case in cases.items() %}
             <div class="col-md-3 mb-4">
                 <div class="card case-card p-3 text-center h-100 shadow" onclick="openCaseModal('{{ key }}', '{{ case.name }}', {{ case.price }}, '{{ case.img }}')">
-                    <div class="position-absolute top-0 start-0 m-2">
-                        <span class="badge-tier tier-mythic">VIP</span>
-                    </div>
+                    <div class="aim-badge">AIM</div>
                     <img src="{{ case.img }}" class="mx-auto my-3" style="width: 100px; height: 100px; object-fit: contain;">
-                    <h5 class="fw-bold text-white mb-2">{{ case.name }}</h5>
-                    <p class="text-success fw-bold fs-5 mb-3">{{ case.price }} UC</p>
+                    <h5 class="fw-bold text-white mb-1">{{ case.name }}</h5>
+                    <div class="case-footer-text">AIM SYSTEM</div>
+                    <p class="text-success fw-bold fs-5 mt-2 mb-3">{{ case.price }} UC</p>
                     <button class="btn btn-custom btn-sm w-100 mt-auto py-2 fw-bold">Case-ga kirish</button>
                 </div>
             </div>
@@ -107,7 +118,7 @@
         </div>
     </div>
 
-    <!-- CASE ICHIGA KIRISH VA MIQDOR TANLASH MODALI -->
+    <!-- CASE DETAL MODALI -->
     <div class="modal fade" id="caseDetailModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content bg-dark text-white border-warning shadow-lg">
@@ -116,47 +127,39 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center py-4">
-                    <div class="position-relative d-inline-block p-3 rounded-circle bg-black bg-opacity-50 border border-warning border-opacity-25 mb-3">
-                        <img id="modalCaseImg" src="" style="width: 120px; height: 120px; object-fit: contain;">
-                    </div>
+                    <img id="modalCaseImg" src="" style="width: 120px; height: 120px; object-fit: contain;" class="mb-3">
                     <h3 class="text-success fw-bold mb-4" id="modalCasePrice">0 UC</h3>
                     
-                    <p class="text-secondary fw-semibold mb-3">Bir yo'la nechta ochishni xohlaysiz?</p>
+                    <p class="text-secondary fw-semibold mb-3">Nechta ochishni xohlaysiz? (Har biri uchun alohida ruletka ochiladi)</p>
                     <div class="d-flex justify-content-center gap-2 mb-4 flex-wrap" id="countSelector">
                         <button class="btn count-btn active" onclick="setCount(1)">1 talik</button>
                         <button class="btn count-btn" onclick="setCount(2)">2 talik</button>
                         <button class="btn count-btn" onclick="setCount(3)">3 talik</button>
-                        <button class="btn count-btn" onclick="setCount(4)">4 talik</button>
                         <button class="btn count-btn" onclick="setCount(5)">5 talik</button>
                         <button class="btn count-btn" onclick="setCount(10)">10 talik</button>
                     </div>
 
                     <button class="btn btn-custom btn-lg w-100 fw-bold py-3 fs-5 shadow" onclick="startOpening()">
-                        <i class="fa-solid fa-key me-2"></i>CASE-NI OCHISH (Jami: <span id="totalCost">0</span> UC)
+                        CASE-NI OCHISH (Jami: <span id="totalCost">0</span> UC)
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ANIMATSIYA (RULETKA) MODALI -->
+    <!-- KO'P QATORLI ANIMATSIYA MODALI -->
     <div class="modal fade" id="openingModal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content bg-dark text-white border-warning shadow-lg">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-rotate fa-spin me-2"></i>PUBG Skin Ruletkasi Aylanmoqda...</h5>
+                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-rotate fa-spin me-2"></i>AIM Ruletka ishga tushdi...</h5>
                 </div>
-                <div class="modal-body text-center py-5">
-                    <div class="roulette-container mb-4">
-                        <div class="pointer"></div>
-                        <div class="roulette-track" id="rouletteTrack"></div>
-                    </div>
-                    <div id="resultContainer" class="mt-4">
-                        <h4 id="resultText" class="text-success fw-bold"></h4>
-                    </div>
-                    <button type="button" class="btn btn-custom mt-4 px-5 py-2 fw-bold d-none" id="closeModalBtn" data-bs-dismiss="modal" onclick="location.reload()">
-                        <i class="fa-solid fa-check me-2"></i>Ajoyib (Inventarga saqlandi)
-                    </button>
+                <div class="modal-body text-center py-4" id="multiRouletteWrapper">
+                    <!-- Dinamik ravishda nechta ochilsa, shuncha ruletka qatori chiqadi -->
+                </div>
+                <div class="text-center pb-4">
+                    <div id="resultText" class="text-success fw-bold fs-5 mb-3"></div>
+                    <button type="button" class="btn btn-custom px-5 py-2 fw-bold d-none" id="closeModalBtn" data-bs-dismiss="modal" onclick="location.reload()">Ajoyib (Inventarga tushdi)</button>
                 </div>
             </div>
         </div>
@@ -167,51 +170,66 @@
         <div class="modal-dialog modal-xl">
             <div class="modal-content bg-dark text-white border-info shadow-lg">
                 <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-info fw-bold"><i class="fa-solid fa-backpack me-2"></i>Sizning Inventaringiz (Skinlar ombori)</h5>
+                    <h5 class="modal-title text-info fw-bold"><i class="fa-solid fa-backpack me-2"></i>Sizning Inventaringiz</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="d-flex justify-content-between align-items-center mb-4 bg-secondary bg-opacity-10 p-3 rounded-3 border border-secondary border-opacity-25">
-                        <p class="text-secondary mb-0">Yutib olingan barcha skinlar shu yerda saqlanadi. Istasangiz UC ga sotishingiz mumkin.</p>
+                        <p class="text-secondary mb-0">Yutgan buyumlaringizni istalgan vaqtda UC ga sotishingiz mumkin.</p>
                         <button class="btn btn-sm btn-danger fw-bold px-3 py-2" onclick="sellAllInventory()"><i class="fa-solid fa-coins me-1"></i> Hammasini UC ga sotish</button>
                     </div>
-                    <div class="row" id="inventoryItemsList">
-                        <!-- Ajax orqali to'ldiriladi -->
+                    <div class="row" id="inventoryItemsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REFERAL MODALI -->
+    <div class="modal fade" id="referralModal" tabindex="-1">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content bg-dark text-white border-warning shadow-lg">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-users me-2"></i>Do'stlarni Taklif Qilish (Referal)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <p class="text-secondary">Har bir taklif qilingan do'st uchun <b class="text-success">20 UC</b> bonus oling!</p>
+                    <div class="input-group mb-3">
+                        <input type="text" id="refLink" class="form-control bg-black text-white border-secondary text-center" readonly value="https://aimdrop.uz/register?ref={% if user %}{{ user.id }}{% endif %}">
+                        <button class="btn btn-warning fw-bold" onclick="copyRefLink()">Nusxalash</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- KABINET & MOLIYA MODALI -->
+    <!-- MOLIYA MODALI -->
     <div class="modal fade" id="profileModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content bg-dark text-white border-warning shadow-lg">
                 <div class="modal-header border-secondary">
-                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-wallet me-2"></i>Shaxsiy Kabinet & Balansni To'ldirish</h5>
+                    <h5 class="modal-title text-warning fw-bold"><i class="fa-solid fa-wallet me-2"></i>Balansni To'ldirish & Yechish</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-warning mb-4">
-                        <b><i class="fa-solid fa-circle-info me-1"></i> Balansni to'ldirish tartibi:</b> Quyidagi karta raqamiga kerakli summada pul o'tkazing va chek rasmini yuklang.<br>
-                        💳 <b>Karta raqami:</b> <code class="fs-5 text-dark bg-warning px-3 py-1 rounded fw-bold ms-1">5614 6865 0763 1458</code>
+                        💳 Karta orqali to'ldirish: <code class="fs-5 text-dark bg-warning px-3 py-1 rounded fw-bold ms-1">5614 6865 0763 1458</code>
                     </div>
-                    <h5 class="text-white fw-bold mb-3">Chek yuborib balansni oshirish</h5>
                     <form onsubmit="submitTopup(event)">
                         <div class="mb-3">
-                            <label class="form-label text-secondary">Summa (UC miqdori)</label>
-                            <input type="number" id="topupAmount" class="form-control bg-black text-white border-secondary py-2" required placeholder="Masalan: 500">
+                            <label class="form-label text-secondary">Summa (UC)</label>
+                            <input type="number" id="topupAmount" class="form-control bg-black text-white border-secondary py-2" required placeholder="Masalan: 200">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label text-secondary">To'lov cheki rasmi</label>
+                            <label class="form-label text-secondary">Chek rasmi</label>
                             <input type="file" id="checkFile" class="form-control bg-black text-white border-secondary py-2" accept="image/*" required>
                         </div>
-                        <button type="submit" class="btn btn-success w-100 fw-bold py-2"><i class="fa-solid fa-paper-plane me-2"></i>Adminga Chekni Yuborish</button>
+                        <button type="submit" class="btn btn-success w-100 fw-bold py-2">Adminga Yuborish</button>
                     </form>
                     <hr class="my-4 border-secondary">
-                    <h5 class="text-white fw-bold mb-3">PUBG ID ga UC Yechib olish</h5>
+                    <h5 class="text-white fw-bold mb-3">UC Yechish (PUBG ID)</h5>
                     <div class="input-group mb-3">
-                        <input type="text" id="pubgId" class="form-control bg-black text-white border-secondary py-2 me-2" placeholder="PUBG ID raqamingiz">
+                        <input type="text" id="pubgId" class="form-control bg-black text-white border-secondary py-2 me-2" placeholder="PUBG ID">
                         <input type="number" id="ucAmount" class="form-control bg-black text-white border-secondary py-2" placeholder="UC (min 60)">
                         <button class="btn btn-warning fw-bold px-4" onclick="withdrawUC()">Yechish</button>
                     </div>
@@ -238,18 +256,10 @@
             selectedCaseKey = key;
             casePricePerOne = price;
             selectedCount = 1;
-            
             document.getElementById('modalCaseName').innerText = name;
             document.getElementById('modalCasePrice').innerText = price + ' UC (1 ta)';
             document.getElementById('modalCaseImg').src = img;
-            
-            let btns = document.querySelectorAll('.count-btn');
-            btns.forEach((b, idx) => {
-                if(idx === 0) b.classList.add('active');
-                else b.classList.remove('active');
-            });
             document.getElementById('totalCost').innerText = price;
-            
             let modal = new bootstrap.Modal(document.getElementById('caseDetailModal'));
             modal.show();
         }
@@ -257,7 +267,6 @@
         function setCount(count) {
             selectedCount = count;
             document.getElementById('totalCost').innerText = (casePricePerOne * count).toFixed(1);
-            
             let btns = document.querySelectorAll('.count-btn');
             btns.forEach(b => {
                 if(b.innerText.startsWith(count + ' ')) b.classList.add('active');
@@ -267,52 +276,82 @@
 
         function startOpening() {
             bootstrap.Modal.getInstance(document.getElementById('caseDetailModal')).hide();
-            
             fetch('/api/open_case/' + selectedCaseKey + '/' + selectedCount, { method: 'POST' })
             .then(res => res.json())
             .then(data => {
-                if(!data.success) {
-                    alert(data.msg);
-                    return;
-                }
-                
-                let modal = new bootstrap.Modal(document.getElementById('openingModal'));
-                modal.show();
-                
-                let track = document.getElementById('rouletteTrack');
-                track.style.transition = 'none';
-                track.style.transform = 'translateX(0px)';
-                track.innerHTML = '';
-                document.getElementById('resultText').innerText = '';
-                document.getElementById('closeModalBtn').classList.add('d-none');
-                
-                let itemsList = data.all_items;
-                let html = '';
-                for(let i = 0; i < 35; i++) {
-                    let randItem = itemsList[Math.floor(Math.random() * itemsList.length)];
-                    html += `<div class="roulette-item"><img src="${randItem.img}"><small class="text-truncate w-100 text-light fw-bold">${randItem.name}</small><span class="text-success small">${randItem.price} UC</span></div>`;
-                }
-                let winningItem = data.won_items[0];
-                html += `<div class="roulette-item border-warning bg-warning bg-opacity-10"><img src="${winningItem.img}"><small class="text-truncate w-100 text-warning fw-bold">${winningItem.name}</small><span class="text-success fw-bold">${winningItem.price} UC</span></div>`;
-                
-                for(let i = 0; i < 15; i++) {
-                    let randItem = itemsList[Math.floor(Math.random() * itemsList.length)];
-                    html += `<div class="roulette-item"><img src="${randItem.img}"><small class="text-truncate w-100 text-light fw-bold">${randItem.name}</small><span class="text-success small">${randItem.price} UC</span></div>`;
-                }
-                track.innerHTML = html;
-                
-                setTimeout(() => {
-                    track.style.transition = 'transform 4.5s cubic-bezier(0.08, 0.82, 0.17, 1)';
-                    track.style.transform = 'translateX(-3400px)';
-                }, 100);
-                
-                setTimeout(() => {
-                    let text = "🎉 Tabriklaymiz! Siz yutib oldingiz:\n";
-                    data.won_items.forEach(it => { text += `✨ ${it.name} - ${it.price} UC\n`; });
-                    document.getElementById('resultText').innerText = text;
-                    document.getElementById('closeModalBtn').classList.remove('d-none');
-                }, 4700);
+                if(!data.success) { alert(data.msg); return; }
+                runMultiRouletteAnimation(data);
             });
+        }
+
+        function openFreeDailyCase() {
+            fetch('/api/open_free_case', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if(!data.success) { alert(data.msg); return; }
+                runMultiRouletteAnimation(data);
+            });
+        }
+
+        function runMultiRouletteAnimation(data) {
+            let modal = new bootstrap.Modal(document.getElementById('openingModal'));
+            modal.show();
+            
+            let wrapper = document.getElementById('multiRouletteWrapper');
+            wrapper.innerHTML = '';
+            document.getElementById('resultText').innerText = '';
+            document.getElementById('closeModalBtn').classList.add('d-none');
+            
+            let wonItems = data.won_items;
+            let itemsList = data.all_items;
+            
+            // Har bir yutuq uchun alohida ruletka chizig'i hosil qilamiz
+            wonItems.forEach((winningItem, index) => {
+                let rId = 'rouletteTrack_' + index;
+                let htmlContainer = `
+                    <div class="roulette-container">
+                        <div class="pointer"></div>
+                        <div class="roulette-track" id="${rId}"></div>
+                    </div>
+                `;
+                wrapper.innerHTML += htmlContainer;
+            });
+            
+            // Tracklarga elementlarni to'ldiramiz va bir vaqtda aylantiramiz
+            setTimeout(() => {
+                wonItems.forEach((winningItem, index) => {
+                    let rId = 'rouletteTrack_' + index;
+                    let track = document.getElementById(rId);
+                    track.style.transition = 'none';
+                    track.style.transform = 'translateX(0px)';
+                    
+                    let trackHtml = '';
+                    for(let i = 0; i < 30; i++) {
+                        let randItem = itemsList[Math.floor(Math.random() * itemsList.length)];
+                        trackHtml += `<div class="roulette-item"><img src="${randItem.img}"><small class="text-truncate w-100 text-light fw-bold">${randItem.name}</small><span class="text-success small">${randItem.price} UC</span></div>`;
+                    }
+                    // Yutuq elementni o'rtaga joylaymiz
+                    trackHtml += `<div class="roulette-item border-warning bg-warning bg-opacity-10"><img src="${winningItem.img}"><small class="text-truncate w-100 text-warning fw-bold">${winningItem.name}</small><span class="text-success fw-bold">${winningItem.price} UC</span></div>`;
+                    
+                    for(let i = 0; i < 15; i++) {
+                        let randItem = itemsList[Math.floor(Math.random() * itemsList.length)];
+                        trackHtml += `<div class="roulette-item"><img src="${randItem.img}"><small class="text-truncate w-100 text-light fw-bold">${randItem.name}</small><span class="text-success small">${randItem.price} UC</span></div>`;
+                    }
+                    track.innerHTML = trackHtml;
+                    
+                    setTimeout(() => {
+                        track.style.transition = 'transform 4.5s cubic-bezier(0.08, 0.82, 0.17, 1)';
+                        track.style.transform = 'translateX(-3000px)';
+                    }, 50);
+                });
+            }, 100);
+            
+            setTimeout(() => {
+                let text = "🎉 Tabriklaymiz! Siz yutib oldingiz:\n";
+                wonItems.forEach(it => { text += `✨ ${it.name} - ${it.price} UC | `; });
+                document.getElementById('resultText').innerText = text;
+                document.getElementById('closeModalBtn').classList.remove('d-none');
+            }, 4800);
         }
 
         function loadInventory() {
@@ -330,7 +369,7 @@
                                 <img src="${item.item_image}" style="width: 80px; height: 80px; object-fit: contain;" class="mx-auto mb-2">
                                 <h6 class="text-truncate text-white fw-bold mb-1">${item.item_name}</h6>
                                 <p class="text-success fw-bold mb-3">${item.item_price} UC</p>
-                                <button class="btn btn-sm btn-outline-warning mt-auto fw-bold py-2" onclick="sellItem(${item.id})"><i class="fa-solid fa-coins me-1"></i> UC ga sotish</button>
+                                <button class="btn btn-sm btn-outline-warning mt-auto fw-bold py-2" onclick="sellItem(${item.id})">UC ga sotish</button>
                             </div>
                         </div>
                     `;
@@ -340,18 +379,12 @@
         }
 
         function sellItem(itemId) {
-            fetch('/api/sell_item/' + itemId, { method: 'POST' }).then(res => res.json()).then(data => {
-                alert(data.msg);
-                loadInventory();
-            });
+            fetch('/api/sell_item/' + itemId, { method: 'POST' }).then(res => res.json()).then(data => { alert(data.msg); loadInventory(); });
         }
 
         function sellAllInventory() {
             if(!confirm("Barcha buyumlarni UC ga sotishni xohlaysizmi?")) return;
-            fetch('/api/sell_all_inventory', { method: 'POST' }).then(res => res.json()).then(data => {
-                alert(data.msg);
-                loadInventory();
-            });
+            fetch('/api/sell_all_inventory', { method: 'POST' }).then(res => res.json()).then(data => { alert(data.msg); loadInventory(); });
         }
 
         function submitTopup(event) {
@@ -365,7 +398,7 @@
         function withdrawUC() {
             let formData = new FormData();
             formData.append('pubg_id', document.getElementById('pubgId').value);
-            formData.append('uc_amount', document.getElementById('ucAmount').value);
+            formData.append('uc_amount', document.getElementById('ucAmount', 0).value);
             fetch('/api/withdraw_uc', { method: 'POST', body: formData }).then(res => res.json()).then(data => { alert(data.msg); location.reload(); });
         }
 
@@ -375,8 +408,11 @@
             fetch('/api/activate_promo', { method: 'POST', body: formData }).then(res => res.json()).then(data => { alert(data.msg); location.reload(); });
         }
 
-        function claimDaily() {
-            fetch('/api/daily_bonus', { method: 'POST' }).then(res => res.json()).then(data => { alert(data.msg); location.reload(); });
+        function copyRefLink() {
+            let copyText = document.getElementById("refLink");
+            copyText.select();
+            navigator.clipboard.writeText(copyText.value);
+            alert("Referal havola nusxalandi: " + copyText.value);
         }
     </script>
 </body>
