@@ -7,12 +7,12 @@ from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 app = FastAPI()
 
 # --- SOZLAMALAR ---
-BOT_TOKEN = "8253855521:AAFKZuc2oE9Bh0qlUBGnoucfMD-LJ_fURcQ"
+BOT_TOKEN = "8253855521:AAHluezqlI9NphF0Wp99NeiuMrWxHilbing"
 SUPER_ADMIN_ID = 8692517241
 
 bot = Bot(token=BOT_TOKEN)
@@ -33,10 +33,7 @@ def init_db():
             username TEXT,
             aimcoin REAL DEFAULT 100.0,
             total_donated REAL DEFAULT 0.0,
-            pubg_id TEXT,
-            partner_code TEXT,
-            partner_earned REAL DEFAULT 0.0,
-            referred_count INTEGER DEFAULT 0
+            partner_earned REAL DEFAULT 0.0
         )
     """)
     cursor.execute("""
@@ -50,8 +47,7 @@ def init_db():
             reward REAL,
             max_uses INTEGER DEFAULT 10,
             used_count INTEGER DEFAULT 0,
-            owner_id INTEGER DEFAULT 0,
-            earned_from_promo REAL DEFAULT 0.0
+            owner_id INTEGER DEFAULT 0
         )
     """)
     cursor.execute("""
@@ -78,7 +74,7 @@ def is_admin(user_id: int) -> bool:
     conn.close()
     return res is not None
 
-# --- TELEGRAM BOT ---
+# --- TELEGRAM BOT (DEMO BALANS BOT ICHIDA) ---
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     user_id = message.from_user.id
@@ -88,23 +84,72 @@ async def cmd_start(message: types.Message):
     cursor.execute("INSERT OR IGNORE INTO users (user_id, username, aimcoin) VALUES (?, ?, 100.0)", (user_id, username))
     conn.commit()
     conn.close()
+
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="🎬 Demo Balans So'rash"), KeyboardButton(text="📊 Mening Statistikam")]
+        ],
+        resize_keyboard=True
+    )
+
     await message.answer(
-        f"🔥 **BULLDROP** rasmiy botiga xush kelibsiz!\nSizning Telegram ID raqamingiz: `{user_id}`",
+        f"🔥 **BULLDROP** rasmiy botiga xush kelibsiz!\n"
+        f"Sizning Telegram ID raqamingiz: `{user_id}`\n\n"
+        f"Pastdagi tugmalar orqali demo balans so'rashingiz mumkin.",
+        reply_markup=keyboard,
         parse_mode="Markdown"
     )
 
-@dp.message(Command("addpromo"))
-async def cmd_addpromo(message: types.Message):
-    if not is_admin(message.from_user.id): return
-    args = message.text.split()
-    if len(args) < 4: return
-    code, reward, limit = args[1].upper(), float(args[2]), int(args[3])
+@dp.message(F.text == "🎬 Demo Balans So'rash")
+async def ask_demo_start(message: types.Message):
+    await message.answer("Iltimos, demo balans sifatida olmoqchi bo'lgan UC miqdorini yuboring (masalan: `500`):", parse_mode="Markdown")
+
+@dp.message(F.text.regexp(r'^\d+(\.\d+)?$'))
+async def process_demo_amount(message: types.Message):
+    user_id = message.from_user.id
+    amount = float(message.text)
+    
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("INSERT OR REPLACE INTO promos (code, reward, max_uses, used_count) VALUES (?, ?, ?, 0)", (code, reward, limit))
+    cursor.execute("INSERT INTO demo_requests (user_id, amount) VALUES (?, ?)", (user_id, amount))
+    req_id = cursor.lastrowid
     conn.commit()
     conn.close()
-    await message.answer(f"✅ Promokod yaratildi: `{code}` ({reward} UC)", parse_mode="Markdown")
+
+    markup = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Tasdiqlash", callback_data=f"approve_demo_{req_id}"),
+            InlineKeyboardButton(text="❌ Rad etish", callback_data=f"reject_demo_{req_id}")
+        ]
+    ])
+    try:
+        await bot.send_message(
+            SUPER_ADMIN_ID,
+            f"🎬 **Yangi Bot Demo So'rovi!**\n\n"
+            f"👤 Foydalanuvchi ID: `{user_id}`\n"
+            f"💰 Miqdor: {amount} UC\n"
+            f"🆔 So'rov ID: #{req_id}",
+            reply_markup=markup,
+            parse_mode="Markdown"
+        )
+    except Exception:
+        pass
+
+    await message.answer(f"✅ Demo balans so'rovingiz ({amount} UC) adminga yuborildi! Tez orada ko'rib chiqiladi.")
+
+@dp.message(F.text == "📊 Mening Statistikam")
+async def my_stats(message: types.Message):
+    user_id = message.from_user.id
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT aimcoin, partner_earned FROM users WHERE user_id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    if user:
+        aim = user["aimcoin"]
+        uc = (aim / 100) * 60
+        earned = user["partner_earned"]
+        await message.answer(f"📊 **SizningProfilingiz:**\n\n💎 AimCoin: {aim:.2f}\n💰 UC Ekvivalenti: {uc:.1f} UC\n🤝 Hamkorlikdan topilgan: {earned} UC")
 
 @dp.callback_query(F.data.startswith("approve_demo_"))
 async def approve_demo(callback: types.CallbackQuery):
@@ -167,7 +212,7 @@ for i in range(1, 21):
         "items": items
     }
 
-# --- FASTAPI HTML / CSS / 3D FRONTEND ---
+# --- FASTAPI 3D WEB APP (MINES, TOWER, CRASH, CASES) ---
 @app.get("/", response_class=HTMLResponse)
 async def index():
     return HTMLResponse(content="""
@@ -176,13 +221,13 @@ async def index():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>BULLDROP - 3D Cases</title>
+        <title>BULLDROP - Ultimate 3D</title>
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
         <style>
             * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-            body { background: radial-gradient(circle at center, #111827 0%, #030712 100%); color: #fff; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+            body { background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); color: #fff; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
             
-            header { display: flex; justify-content: space-between; align-items: center; background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); position: sticky; top: 0; z-index: 1000; }
+            header { display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(15px); padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); position: sticky; top: 0; z-index: 1000; }
             .logo { font-size: 20px; font-weight: 900; background: linear-gradient(135deg, #f59e0b, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 1px; }
             .balance-container { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.4); padding: 6px 14px; border-radius: 30px; font-weight: 700; color: #fbbf24; font-size: 13px; box-shadow: 0 0 15px rgba(245, 158, 11, 0.15); }
 
@@ -191,39 +236,55 @@ async def index():
             .tab-content.active { display: block; }
             @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-            /* 3D Case Grid */
+            /* Grid & Cards */
             .cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
-            .case-card { background: linear-gradient(145deg, #1f2937, #111827); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); transform-style: preserve-3d; }
+            .case-card { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); transform-style: preserve-3d; }
             .case-card:hover { transform: translateY(-6px) scale(1.02); border-color: rgba(245, 158, 11, 0.5); box-shadow: 0 20px 35px -10px rgba(245, 158, 11, 0.2); }
-            .case-img { width: 85px; height: 85px; object-fit: contain; margin: 10px auto; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.6)); transition: transform 0.3s; }
-            .case-card:hover .case-img { transform: scale(1.1) rotate(3deg); }
-            .btn-open { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; padding: 8px; width: 100%; border-radius: 8px; font-weight: 700; margin-top: 10px; cursor: pointer; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); transition: 0.2s; }
-            .btn-open:active { transform: scale(0.95); }
+            .case-img { width: 80px; height: 80px; object-fit: contain; margin: 10px auto; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.6)); }
+            .btn-open { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; padding: 8px; width: 100%; border-radius: 8px; font-weight: 700; margin-top: 10px; cursor: pointer; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); }
 
-            /* Case Detail / Multi-Open Modal view */
-            .case-view { background: linear-gradient(145deg, #1f2937, #111827); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 25px; text-align: center; max-width: 600px; margin: 0 auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); }
+            .case-view { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 25px; text-align: center; max-width: 600px; margin: 0 auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); }
             .multi-select { display: flex; justify-content: center; gap: 8px; margin: 20px 0; flex-wrap: wrap; }
-            .count-btn { background: #374151; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-            .count-btn.active { background: #f59e0b; color: #111827; border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+            .count-btn { background: #334155; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+            .count-btn.active { background: #f59e0b; color: #0f172a; border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
 
             /* Roulette Track */
-            .roulette-track-window { width: 100%; overflow: hidden; position: relative; height: 130px; background: #030712; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
+            .roulette-track-window { width: 100%; overflow: hidden; position: relative; height: 130px; background: #020617; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
             .roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #ef4444; transform: translateX(-50%); z-index: 10; box-shadow: 0 0 10px #ef4444; }
             .roulette-track { display: flex; position: absolute; left: 0; top: 8px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }
-            .roulette-item { min-width: 110px; height: 114px; background: #1f2937; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 6px; font-size: 11px; padding: 6px; }
+            .roulette-item { min-width: 110px; height: 114px; background: #1e293b; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 6px; font-size: 11px; padding: 6px; }
             .roulette-item img { width: 55px; height: 55px; object-fit: contain; margin-bottom: 6px; }
 
-            /* Panel & Forms */
-            .panel { background: linear-gradient(145deg, #1f2937, #111827); border: 1px solid rgba(255,255,255,0.08); padding: 24px; border-radius: 20px; max-width: 440px; margin: 0 auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
-            .form-group { margin-bottom: 15px; text-align: left; }
-            .form-group label { display: block; margin-bottom: 6px; color: #9ca3af; font-size: 12px; font-weight: 600; }
-            .form-group input { width: 100%; padding: 12px; background: #030712; border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 10px; font-size: 14px; text-align: center; outline: none; transition: 0.2s; }
-            .form-group input:focus { border-color: #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
-            .btn-submit { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; padding: 12px; width: 100%; border-radius: 10px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); transition: 0.2s; }
+            /* Mini Games UI (Mines, Tower, Crash) */
+            .game-panel { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px; max-width: 500px; margin: 0 auto; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
+            .games-menu { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+            .game-tab-btn { background: #334155; border: none; color: #fff; padding: 8px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+            .game-tab-btn.active { background: #f59e0b; color: #0f172a; }
 
-            /* Bottom Navigation Bar */
-            .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(17, 24, 39, 0.85); backdrop-filter: blur(15px); border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }
-            .nav-item { background: transparent; border: none; color: #9ca3af; cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-weight: 600; transition: 0.2s; }
+            /* Mines */
+            .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 15px 0; }
+            .mine-cell { aspect-ratio: 1; background: #334155; border: none; border-radius: 8px; font-size: 20px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+            .mine-cell:hover { background: #475569; }
+
+            /* Tower */
+            .tower-grid { display: flex; flex-direction: column-reverse; gap: 6px; margin: 15px 0; }
+            .tower-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+            .tower-cell { background: #334155; border: none; height: 40px; border-radius: 8px; cursor: pointer; font-weight: bold; color: #fff; }
+
+            /* Crash */
+            .crash-screen { height: 180px; background: #020617; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); margin: 15px 0; position: relative; overflow: hidden; }
+            .crash-multiplier { font-size: 36px; font-weight: 900; color: #34d399; text-shadow: 0 0 20px rgba(52, 211, 153, 0.4); }
+
+            /* Panels & Forms */
+            .panel { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); padding: 24px; border-radius: 20px; max-width: 440px; margin: 0 auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
+            .form-group { margin-bottom: 15px; text-align: left; }
+            .form-group label { display: block; margin-bottom: 6px; color: #94a3b8; font-size: 12px; font-weight: 600; }
+            .form-group input { width: 100%; padding: 12px; background: #020617; border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 10px; font-size: 14px; text-align: center; outline: none; }
+            .btn-submit { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; padding: 12px; width: 100%; border-radius: 10px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
+
+            /* Bottom Nav */
+            .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(15px); border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }
+            .nav-item { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-weight: 600; }
             .nav-item.active { color: #f59e0b; text-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
             .nav-item span.icon { font-size: 20px; }
         </style>
@@ -241,14 +302,14 @@ async def index():
                 <div class="cases-grid" id="cases-grid"></div>
             </div>
 
-            <!-- Case Open View / Multi Open -->
+            <!-- Case Detail View -->
             <div id="case-detail-tab" class="tab-content">
                 <div class="case-view">
-                    <img id="detail-img" src="" style="width: 100px; height: 100px; object-fit: contain; margin-bottom: 10px;">
+                    <img id="detail-img" src="" style="width: 90px; height: 90px; object-fit: contain; margin-bottom: 10px;">
                     <h2 id="detail-name" style="margin-bottom: 5px;">Case</h2>
                     <p style="color: #f59e0b; font-weight: 700; font-size: 16px;" id="detail-price-text">10 UC</p>
                     
-                    <p style="font-size: 12px; color: #9ca3af; margin-top: 15px;">Bir vaqtning o'zida nechta ochishni tanlang:</p>
+                    <p style="font-size: 12px; color: #94a3b8; margin-top: 15px;">Nechta ochishni tanlang:</p>
                     <div class="multi-select">
                         <button class="count-btn active" onclick="setCount(1, this)">1 ta</button>
                         <button class="count-btn" onclick="setCount(2, this)">2 ta</button>
@@ -258,7 +319,7 @@ async def index():
                         <button class="count-btn" onclick="setCount(10, this)">10 ta</button>
                     </div>
 
-                    <p style="font-size: 13px; margin-bottom: 15px;">Umumiy narx: <span id="total-open-price" style="color: #fbbf24; font-weight: bold;">10</span> UC (<span id="total-open-aim" style="color: #34d399; font-weight: bold;">16.67</span> Aim)</p>
+                    <p style="font-size: 13px; margin-bottom: 15px;">Umumiy: <span id="total-open-price" style="color: #fbbf24; font-weight: bold;">10</span> UC (<span id="total-open-aim" style="color: #34d399; font-weight: bold;">16.67</span> Aim)</p>
                     
                     <div id="roulette-section" style="display: none;">
                         <div class="roulette-track-window">
@@ -272,6 +333,43 @@ async def index():
                     <div style="display: flex; gap: 10px;">
                         <button class="btn-submit" onclick="openSelectedCase()" id="action-btn">Ochish</button>
                         <button class="count-btn" onclick="switchTab('cases', document.querySelectorAll('.bottom-nav button')[0])" style="flex:1;">Orqaga</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mini Games Tab -->
+            <div id="games-tab" class="tab-content">
+                <div class="game-panel">
+                    <div class="games-menu">
+                        <button class="game-tab-btn active" onclick="switchGame('mines', this)">Mines</button>
+                        <button class="game-tab-btn" onclick="switchGame('tower', this)">Tower</button>
+                        <button class="game-tab-btn" onclick="switchGame('crash', this)">Crash</button>
+                    </div>
+
+                    <!-- Mines Game -->
+                    <div id="game-mines" class="sub-game">
+                        <h3 style="margin-bottom: 10px;">Mines O'yini</h3>
+                        <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="mines-bet" value="10"></div>
+                        <div class="mines-grid" id="mines-board"></div>
+                        <button class="btn-submit" onclick="startMines()">O'yinni Boshlash</button>
+                    </div>
+
+                    <!-- Tower Game -->
+                    <div id="game-tower" class="sub-game" style="display: none;">
+                        <h3 style="margin-bottom: 10px;">Tower O'yini</h3>
+                        <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="tower-bet" value="10"></div>
+                        <div class="tower-grid" id="tower-board"></div>
+                        <button class="btn-submit" onclick="startTower()">Qurishni Boshlash</button>
+                    </div>
+
+                    <!-- Crash Game -->
+                    <div id="game-crash" class="sub-game" style="display: none;">
+                        <h3 style="margin-bottom: 10px;">Crash O'yini</h3>
+                        <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="crash-bet" value="10"></div>
+                        <div class="crash-screen">
+                            <div class="crash-multiplier" id="crash-mult">1.00x</div>
+                        </div>
+                        <button class="btn-submit" onclick="startCrash()" id="crash-btn">Uchishni Boshlash</button>
                     </div>
                 </div>
             </div>
@@ -302,29 +400,18 @@ async def index():
                 </div>
                 <div class="panel">
                     <h3 style="margin-bottom: 10px;">Hamkorlik (20% Bonus)</h3>
-                    <p style="font-size: 12px; color: #9ca3af; margin-bottom: 12px;">Sizning promokodingiz orqali tushgan daromad:</p>
+                    <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Sizning promokodingiz orqali tushgan daromad:</p>
                     <p style="font-size: 15px; color: #34d399; font-weight: bold; margin-bottom: 12px;"><span id="partner-earned">0</span> UC</p>
                     <button class="btn-submit" onclick="loadPartnerStats()">Yangilash</button>
-                </div>
-            </div>
-
-            <!-- Demo Balance Tab -->
-            <div id="demo-tab" class="tab-content">
-                <div class="panel">
-                    <h3 style="margin-bottom: 10px;">Video uchun Demo Balans</h3>
-                    <p style="font-size: 12px; color: #9ca3af; margin-bottom: 15px;">Telegram ID orqali adminga demo balans so'rovini yuboring.</p>
-                    <div class="form-group"><label>Demo UC miqdori:</label><input type="number" id="demo-amount" value="500"></div>
-                    <button class="btn-submit" onclick="requestDemo()">So'rov yuborish</button>
-                    <p id="demo-msg" style="margin-top: 10px; font-size: 12px; text-align: center; font-weight: 600;"></p>
                 </div>
             </div>
         </div>
 
         <nav class="bottom-nav">
             <button class="nav-item active" onclick="switchTab('cases', this)"><span class="icon">📦</span> <span>Keyslar</span></button>
+            <button class="nav-item" onclick="switchTab('games', this)"><span class="icon">🎮</span> <span>O'yinlar</span></button>
             <button class="nav-item" onclick="switchTab('wallet', this)"><span class="icon">💳</span> <span>To'ldirish</span></button>
-            <button class="nav-item" onclick="switchTab('promo', this)"><span class="icon">🎁</span> <span>Promo/Hamkor</span></button>
-            <button class="nav-item" onclick="switchTab('demo', this)"><span class="icon">🎬</span> <span>Demo Balans</span></button>
+            <button class="nav-item" onclick="switchTab('promo', this)"><span class="icon">🎁</span> <span>Hamkor</span></button>
         </nav>
 
         <script>
@@ -399,68 +486,111 @@ async def index():
             async function openSelectedCase() {
                 let totalUc = currentCasePriceUc * selectedCount;
                 let totalAim = (totalUc / 60) * 100;
-
-                if(balanceAim < totalAim) { 
-                    alert("AimCoin yetarli emas! Balansni to'ldiring."); 
-                    return; 
-                }
-
+                if(balanceAim < totalAim) { alert("AimCoin yetarli emas!"); return; }
                 balanceAim -= totalAim;
                 updateUI();
 
                 document.getElementById('roulette-section').style.display = 'block';
-                document.getElementById('win-result').innerText = "Kейслар ochilmoqda...";
-
                 let res = await fetch('/open/' + currentCaseId, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                     body: `count=${selectedCount}`
                 });
                 let data = await res.json();
-
                 let track = document.getElementById('track');
-                track.style.transition = 'none';
-                track.style.transform = 'translateX(0px)';
-
                 let itemsHtml = '';
-                let winningIndex = 30;
                 for(let i = 0; i < 40; i++) {
-                    let item = (i === winningIndex) ? data.win_items[0] : data.random_items[i % data.random_items.length];
-                    itemsHtml += `<div class="roulette-item"><img src="${item.img}"><span style="font-weight:700;">${item.val} UC</span></div>`;
+                    let item = (i === 30) ? data.win_items[0] : data.random_items[i % data.random_items.length];
+                    itemsHtml += `<div class="roulette-item"><img src="${item.img}"><span>${item.val} UC</span></div>`;
                 }
                 track.innerHTML = itemsHtml;
-
                 setTimeout(() => {
                     track.style.transition = 'transform 4s cubic-bezier(0.08, 0.82, 0.17, 1)';
-                    let targetOffset = (winningIndex * 122) - 200;
-                    track.style.transform = `translateX(-${targetOffset}px)`;
+                    track.style.transform = `translateX(-${(30 * 122) - 200}px)`;
                 }, 50);
-
                 setTimeout(() => {
-                    let totalWonUc = 0;
-                    let names = [];
-                    data.win_items.forEach(item => {
-                        totalWonUc += item.val;
-                        names.push(item.name);
-                    });
-                    let wonAim = (totalWonUc / 60) * 100;
-                    balanceAim += wonAim;
+                    let totalWonUc = data.win_items.reduce((s, i) => s + i.val, 0);
+                    balanceAim += (totalWonUc / 60) * 100;
                     updateUI();
-
-                    document.getElementById('win-result').innerHTML = `🎉 Yutdingiz (${selectedCount} ta): ${names.join(', ')} — Jami: ${totalWonUc.toFixed(1)} UC`;
+                    document.getElementById('win-result').innerText = `🎉 Yutdingiz: ${totalWonUc.toFixed(1)} UC`;
                 }, 4100);
+            }
+
+            // MINI GAMES LOGIC
+            function switchGame(game, btn) {
+                document.querySelectorAll('.sub-game').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.game-tab-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById('game-' + game).style.display = 'block';
+                btn.classList.add('active');
+            }
+
+            // Mines Setup
+            let minesBoard = document.getElementById('mines-board');
+            for(let i=0; i<25; i++) {
+                let cell = document.createElement('button');
+                cell.className = 'mine-cell';
+                cell.innerText = '❓';
+                minesBoard.appendChild(cell);
+            }
+            function startMines() {
+                let bet = parseFloat(document.getElementById('mines-bet').value) || 10;
+                if(balanceAim < bet) { alert("Aim yetarli emas!"); return; }
+                balanceAim -= bet; updateUI();
+                document.querySelectorAll('.mine-cell').forEach(c => {
+                    c.innerText = '💎';
+                    c.onclick = () => {
+                        let win = bet * 1.5;
+                        balanceAim += win; updateUI();
+                        alert(`Tabriklaymiz! +${win.toFixed(1)} Aim yutdingiz!`);
+                    };
+                });
+            }
+
+            // Tower Setup
+            let towerBoard = document.getElementById('tower-board');
+            for(let i=0; i<4; i++) {
+                let row = document.createElement('div');
+                row.className = 'tower-row';
+                for(let j=0; j<3; j++) {
+                    let btn = document.createElement('button');
+                    btn.className = 'tower-cell';
+                    btn.innerText = '•';
+                    row.appendChild(btn);
+                }
+                towerBoard.appendChild(row);
+            }
+            function startTower() {
+                let bet = parseFloat(document.getElementById('tower-bet').value) || 10;
+                if(balanceAim < bet) { alert("Aim yetarli emas!"); return; }
+                balanceAim -= bet; updateUI();
+                alert("Tower boshlandi! Qatorni tanlang.");
+            }
+
+            // Crash Setup
+            function startCrash() {
+                let bet = parseFloat(document.getElementById('crash-bet').value) || 10;
+                if(balanceAim < bet) { alert("Aim yetarli emas!"); return; }
+                balanceAim -= bet; updateUI();
+                let mult = 1.0;
+                let multElem = document.getElementById('crash-mult');
+                let timer = setInterval(() => {
+                    mult += 0.05;
+                    multElem.innerText = mult.toFixed(2) + 'x';
+                    if(Math.random() < 0.05) {
+                        clearInterval(timer);
+                        multElem.innerText = "CRASHED (" + mult.toFixed(2) + "x)";
+                    }
+                }, 100);
             }
 
             function calcSum() {
                 let uc = parseFloat(document.getElementById('uc-topup').value) || 0;
                 document.getElementById('sum-calc').innerText = Math.round((uc / 60) * 14000);
             }
-
             function requestSMS() {
                 document.getElementById('wallet-step-1').style.display = 'none';
                 document.getElementById('wallet-step-2').style.display = 'block';
             }
-
             async function confirmPayment() {
                 let uc = parseFloat(document.getElementById('uc-topup').value) || 60;
                 let res = await fetch('/topup_webhook', {
@@ -470,15 +600,13 @@ async def index():
                 });
                 let data = await res.json();
                 if(data.success) {
-                    balanceAim = data.new_aim;
-                    updateUI();
-                    alert("To'lov muvaffaqiyatli bajarildi!");
+                    balanceAim = data.new_aim; updateUI();
+                    alert("To'lov bajarildi!");
                     document.getElementById('wallet-step-2').style.display = 'none';
                     document.getElementById('wallet-step-1').style.display = 'block';
                     switchTab('cases', document.querySelectorAll('.bottom-nav button')[0]);
                 }
             }
-
             async function activatePromo() {
                 let code = document.getElementById('promo-code-input').value.trim();
                 let msg = document.getElementById('promo-msg');
@@ -492,24 +620,10 @@ async def index():
                 msg.innerText = data.msg;
                 if(data.success) { balanceAim += data.reward_aim; updateUI(); }
             }
-
             async function loadPartnerStats() {
                 let res = await fetch(`/partner_stats/${userId}`);
                 let data = await res.json();
                 document.getElementById('partner-earned').innerText = data.earned;
-            }
-
-            async function requestDemo() {
-                let amount = parseFloat(document.getElementById('demo-amount').value) || 100;
-                let msg = document.getElementById('demo-msg');
-                let res = await fetch('/request_demo', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: `user_id=${userId}&amount=${amount}`
-                });
-                let data = await res.json();
-                msg.style.color = data.success ? "#34d399" : "#ef4444";
-                msg.innerText = data.msg;
             }
         </script>
     </body>
@@ -525,12 +639,7 @@ async def open_case(case_id: str, count: int = Form(1)):
     case = CASES[case_id]
     items = case["items"]
     chances = [item["chance"] for item in items]
-    
-    win_items = []
-    for _ in range(count):
-        w_item = random.choices(items, weights=chances, k=1)[0]
-        win_items.append(w_item)
-        
+    win_items = [random.choices(items, weights=chances, k=1)[0] for _ in range(count)]
     random_items = [random.choice(items) for _ in range(15)]
     return {"win_items": win_items, "random_items": random_items}
 
@@ -579,32 +688,6 @@ async def partner_stats(user_id: int):
     res = cursor.fetchone()
     conn.close()
     return {"earned": res["partner_earned"] if res else 0.0}
-
-@app.post("/request_demo")
-async def request_demo(user_id: int = Form(...), amount: float = Form(...)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("INSERT INTO demo_requests (user_id, amount) VALUES (?, ?)", (user_id, amount))
-    req_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-
-    markup = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="✅ Tasdiqlash", callback_data=f"approve_demo_{req_id}"),
-            InlineKeyboardButton(text="❌ Rad etish", callback_data=f"reject_demo_{req_id}")
-        ]
-    ])
-    try:
-        await bot.send_message(
-            SUPER_ADMIN_ID,
-            f"🎬 **Demo So'rovi!**\nID: `{user_id}`\nMiqdor: {amount} UC\n#ID: #{req_id}",
-            reply_markup=markup,
-            parse_mode="Markdown"
-        )
-    except Exception:
-        pass
-    return {"success": True, "msg": "So'rov adminga yuborildi!"}
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=10000)
