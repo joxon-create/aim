@@ -115,9 +115,9 @@ async def cmd_start(message: types.Message):
     )
 
     await message.answer(
-        f"🔥 **AIMDROP v2.0** rasmiy PUBG botiga xush kelibsiz!\n"
+        f"🔥 **AIMDROP v2.1** rasmiy PUBG botiga xush kelibsiz!\n"
         f"Sizning Telegram ID raqamingiz: `{user_id}`\n\n"
-        f"Pastdagi tugmalar orqali Aim balans so'rashingiz va Web App orqali eksklyuziv Aim PUBG keyslarni ochishingiz mumkin.",
+        f"Pastdagi tugmalar orqali Aim balans so'rashingiz va Web App orqali yangi ehtimollikdagi Aim PUBG keyslarni ochishingiz mumkin.",
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
@@ -283,23 +283,49 @@ async def startup_event():
             
     asyncio.create_task(run_telegram_bot())
 
-# --- PUBG AIMDROP ITEMS & CASES POOL ---
-PUBG_ITEMS_POOL = [
-    {"name": "Aim M416 'Glacier' (Max)", "val": 3500, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 0.001},
-    {"name": "Aim AWM 'The Fool' (Level 3)", "val": 3000, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 0.004},
-    {"name": "Aim Pharaoh X-Suit", "val": 2200, "img": "https://cdn-icons-png.flaticon.com/512/807/807281.png", "chance": 0.01},
-    {"name": "Aim Blood Raven X-Suit", "val": 2200, "img": "https://cdn-icons-png.flaticon.com/512/3135/3135715.png", "chance": 0.015},
-    {"name": "Aim Groza 'River Styx'", "val": 1200, "img": "https://cdn-icons-png.flaticon.com/512/1046/1046857.png", "chance": 0.05},
-    {"name": "Aim Pan 'BFC'", "val": 450, "img": "https://cdn-icons-png.flaticon.com/512/3313/3313498.png", "chance": 0.15},
-    {"name": "Aim Helmet Lv.3 (Mythic)", "val": 250, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069216.png", "chance": 0.82},
-    {"name": "Aim Silver Fragment", "val": 15, "img": "https://cdn-icons-png.flaticon.com/512/217/217853.png", "chance": 98.95},
+# --- PUBG AIMDROP ITEMS & CASES POOL (YANGI EHTTIMOLLIKLAR) ---
+BASE_ICONS = [
+    "https://cdn-icons-png.flaticon.com/512/3076/3076137.png",
+    "https://cdn-icons-png.flaticon.com/512/1069/1069158.png",
+    "https://cdn-icons-png.flaticon.com/512/807/807281.png",
+    "https://cdn-icons-png.flaticon.com/512/3135/3135715.png",
+    "https://cdn-icons-png.flaticon.com/512/1046/1046857.png",
+    "https://cdn-icons-png.flaticon.com/512/3313/3313498.png",
+    "https://cdn-icons-png.flaticon.com/512/1069/1069216.png",
+    "https://cdn-icons-png.flaticon.com/512/217/217853.png"
 ]
 
 CASES = {}
 for i in range(1, 21):
     price_uc = 10 if i == 1 else round(10 + (290 / 19) * (i - 1), 1)
     price_aim = (price_uc / 60) * 100
-    items = [dict(item, val=round(price_aim * random.uniform(0.3, 2.5), 1)) for item in PUBG_ITEMS_POOL]
+    
+    items = []
+    # 1-2: 30x qimmat buyumlar (0.001% ehtimol)
+    for k in range(1, 3):
+        items.append({
+            "name": f"Aim Mythic Crate Item #{k} (30x)",
+            "val": round(price_aim * 30, 2),
+            "img": BASE_ICONS[k % len(BASE_ICONS)],
+            "chance": 0.001
+        })
+    # 3-9: Qolgan 7 ta qimmatroq buyumlar (o'rtacha ehtimol)
+    for k in range(3, 10):
+        items.append({
+            "name": f"Aim Legendary Item #{k}",
+            "val": round(price_aim * random.uniform(1.5, 3.5), 2),
+            "img": BASE_ICONS[k % len(BASE_ICONS)],
+            "chance": 0.5
+        })
+    # 10-30: Qolgan 21 ta arzon buyumlar (katta tushish foizi bilan - sliv)
+    for k in range(10, 31):
+        items.append({
+            "name": f"Aim Standard Crate Item #{k}",
+            "val": round(price_aim * random.uniform(0.1, 0.6), 2),
+            "img": BASE_ICONS[k % len(BASE_ICONS)],
+            "chance": 4.51
+        })
+
     CASES[f"case_{i}"] = {
         "name": f"Aim PUBG Crate #{i}",
         "price_uc": price_uc,
