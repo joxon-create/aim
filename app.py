@@ -15,6 +15,7 @@ BOT_TOKEN = "8253855521:AAF4l7kWU_hKgMysrmHFJjsV2wDVZKtUgRs"
 SUPER_ADMIN_ID = 8692517241
 
 ADMINS = [SUPER_ADMIN_ID, 123456789] 
+CARD_NUMBER = "5614686507631458"
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -35,7 +36,7 @@ def init_db():
             aimcoin REAL DEFAULT 100.0,
             total_donated REAL DEFAULT 0.0,
             partner_earned REAL DEFAULT 0.0,
-            uid TEXT
+            uc_balance REAL DEFAULT 0.0
         )
     """)
     cursor.execute("""
@@ -67,6 +68,15 @@ def init_db():
             amount REAL,
             promo TEXT,
             receipt_info TEXT,
+            status TEXT DEFAULT 'pending'
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS withdraw_requests (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            pubg_id TEXT,
+            amount_uc REAL,
             status TEXT DEFAULT 'pending'
         )
     """)
@@ -106,21 +116,74 @@ async def cmd_start(message: types.Message):
     conn.commit()
     conn.close()
 
-    keyboard = ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="🎬 Aim Balans So'rash"), KeyboardButton(text="📊 Mening Aim Statistikam")],
-            [KeyboardButton(text="💳 Balansni to'ldirish")]
-        ],
-        resize_keyboard=True
-    )
+    keyboard_buttons = [
+        [KeyboardButton(text="🎬 Aim Balans So'rash"), KeyboardButton(text="📊 Mening Aim Statistikam")],
+        [KeyboardButton(text="💳 Balansni to'ldirish"), KeyboardButton(text="⚡ UC Yechib olish")]
+    ]
+    if is_admin(user_id):
+        keyboard_buttons.append([KeyboardButton(text="🛠 Admin Panel")])
+
+    keyboard = ReplyKeyboardMarkup(keyboard=keyboard_buttons, resize_keyboard=True)
 
     await message.answer(
         f"🔥 **AIMDROP v2.1** rasmiy PUBG botiga xush kelibsiz!\n"
         f"Sizning Telegram ID raqamingiz: `{user_id}`\n\n"
-        f"Pastdagi tugmalar orqali Aim balans so'rashingiz va Web App orqali yangi ehtimollikdagi Aim PUBG keyslarni ochishingiz mumkin.",
+        f"Pastdagi tugmalar orqali balansni boshqarishingiz, UC yechib olishingiz va Web App orqali keyslarni ochishingiz mumkin.",
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
+
+@dp.message(F.text == "🛠 Admin Panel")
+async def admin_panel_bot(message: types.Message):
+    if not is_admin(message.from_user.id):
+        return
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM users")
+    u_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM payments WHERE status = 'pending'")
+    p_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM withdraw_requests WHERE status = 'pending'")
+    w_count = cursor.fetchone()[0]
+    conn.close()
+
+    markup = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📢 Barchaga Xabar Yuborish (Reklama)", callback_data="admin_broadcast")],
+        [InlineKeyboardButton(text="➕ Promokod Qo'shish", callback_data="admin_add_promo")]
+    ])
+    await message.answer(
+        f"🛠 **Admin Boshqaruv Paneli:**\n\n"
+        f"👥 Jami foydalanuvchilar: `{u_count}` ta\n"
+        f"⏳ Kutilayotgan to'lovlar: `{p_count}` ta\n"
+        f"⚡ Kutilayotgan UC arizalar: `{w_count}` ta",
+        reply_markup=markup,
+        parse_mode="Markdown"
+    )
+
+@dp.callback_query(F.data == "admin_add_promo")
+async def admin_add_promo(callback: types.CallbackQuery):
+    if not is_admin(callback.from_user.id): return
+    await callback.message.answer("Yangi promokod yaratish uchun quyidagi formatda yuboring:\n`/create_promo CODE REWARD MAX_USES`\nMisol: `/create_promo AIM2026 100 50`")
+    await callback.answer()
+
+@dp.message(Command("create_promo"))
+async def create_promo_cmd(message: types.Message):
+    if not is_admin(message.from_user.id): return
+    args = message.text.split()
+    if len(args) < 4:
+        await message.answer("❌ Xato format! To'g'ri format: `/create_promo KOD MIQDOR LIMIT`", parse_mode="Markdown")
+        return
+    code, reward, max_uses = args[1].upper(), float(args[2]), int(args[3])
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT OR REPLACE INTO promos (code, reward, max_uses, owner_id) VALUES (?, ?, ?, ?)", (code, reward, max_uses, message.from_user.id))
+        conn.commit()
+        await message.answer(f"✅ Promokod muvaffaqiyatli yaratildi!\n🔑 Kod: `{code}`\n💎 Mukofot: `{reward}` Aim\n👥 Limit: `{max_uses}` ta", parse_mode="Markdown")
+    except Exception as e:
+        await message.answer(f"❌ Xatolik yuz berdi: {e}")
+    finally:
+        conn.close()
 
 @dp.message(F.text == "🎬 Aim Balans So'rash")
 async def ask_demo_start(message: types.Message):
@@ -129,15 +192,121 @@ async def ask_demo_start(message: types.Message):
 @dp.message(F.text == "💳 Balansni to'ldirish")
 async def deposit_start_bot(message: types.Message):
     await message.answer(
-        "💳 **Balansni to'ldirish uchun AimDrop Web App'ga o'ting!**\n\n"
-        "U yerda karta raqamiga o'tkazma qilib, promokodlarni qo'llashingiz va chek ma'lumotlari bilan to'lovni tasdiqlashingiz mumkin.",
+        f"💳 **Balansni to'ldirish uchun AimDrop Web App'ga o'ting!**\n\n"
+        f"Rasmiy karta raqami: `{CARD_NUMBER}`\n"
+        f"U yerda karta raqamiga o'tkazma qilib, chek ma'lumotlari bilan to'lovni tasdiqlashingiz mumkin.",
         parse_mode="Markdown"
     )
+
+@dp.message(F.text == "⚡ UC Yechib olish")
+async def withdraw_bot_start(message: types.Message):
+    await message.answer("⚡ UC yechib olish uchun PUBG ID raqamingiz va yechib demoqchi bo'lgan UC miqdorini yuboring.\nFormat: `PUBGID MIQDOR` (Masalan: `5123456789 60`)", parse_mode="Markdown")
+
+@dp.message(F.text.regexp(r'^\d+\s+\d+(\.\d+)?$'))
+async def process_withdraw_request(message: types.Message):
+    user_id = message.from_user.id
+    parts = message.text.split()
+    pubg_id, uc_amount = parts[0], float(parts[1])
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT aimcoin FROM users WHERE user_id = ?", (user_id,))
+    user = cursor.fetchone()
+    if not user:
+        conn.close()
+        return
+    
+    current_aim = user["aimcoin"]
+    required_aim = (uc_amount / 60) * 100
+    if current_aim < required_aim:
+        conn.close()
+        await message.answer(f"❌ Mablag' yetarli emas! {uc_amount} UC uchun {required_aim:.1f} Aim kerak (Sizda: {current_aim:.1f} Aim).")
+        return
+
+    cursor.execute("UPDATE users SET aimcoin = aimcoin - ? WHERE user_id = ?", (required_aim, user_id))
+    cursor.execute("INSERT INTO withdraw_requests (user_id, pubg_id, amount_uc) VALUES (?, ?, ?)", (user_id, pubg_id, uc_amount))
+    req_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    markup = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ UC Tashlab Berdim", callback_data=f"approve_wd_{req_id}"),
+            InlineKeyboardButton(text="❌ Rad Etish", callback_data=f"reject_wd_{req_id}")
+        ]
+    ])
+    for adm in ADMINS:
+        try:
+            await bot.send_message(
+                adm,
+                f"⚡ **Yangi UC Yechish Arizasi!**\n\n"
+                f"👤 Foydalanuvchi ID: `{user_id}`\n"
+                f"🎯 PUBG ID: `{pubg_id}`\n"
+                f"💎 Miqdor: `{uc_amount} UC`\n"
+                f"🆔 Ariza ID: #{req_id}",
+                reply_markup=markup,
+                parse_mode="Markdown"
+            )
+        except Exception:
+            pass
+
+    await message.answer(f"✅ UC yechish arizangiz adminga yuborildi! Tez orada PUBG ID `{pubg_id}` ga yuboriladi.")
+
+@dp.callback_query(F.data.startswith("approve_wd_"))
+async def approve_withdraw(callback: types.CallbackQuery):
+    if not is_admin(callback.from_user.id): return
+    req_id = int(callback.data.split("_")[2])
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT user_id, pubg_id, amount_uc, status FROM withdraw_requests WHERE id = ?", (req_id,))
+    wd = cursor.fetchone()
+    if not wd or wd["status"] != "pending":
+        conn.close()
+        await callback.answer("Ariza topilmadi yoki allaqachon ko'rib chiqilgan.", show_alert=True)
+        return
+    
+    user_id, pubg_id, uc_amount = wd["user_id"], wd["pubg_id"], wd["amount_uc"]
+    cursor.execute("UPDATE withdraw_requests SET status = 'approved' WHERE id = ?", (req_id,))
+    conn.commit()
+    conn.close()
+
+    await callback.message.edit_text(f"✅ UC yechish arizasi (#{req_id}) tasdiqlandi.")
+    try:
+        await bot.send_message(user_id, f"🎉 Tabriklaymiz! Admin PUBG ID `{pubg_id}` ga `{uc_amount} UC` yubordi va tasdiqladi!")
+    except Exception:
+        pass
+
+@dp.callback_query(F.data.startswith("reject_wd_"))
+async def reject_withdraw(callback: types.CallbackQuery):
+    if not is_admin(callback.from_user.id): return
+    req_id = int(callback.data.split("_")[2])
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT user_id, amount_uc, status FROM withdraw_requests WHERE id = ?", (req_id,))
+    wd = cursor.fetchone()
+    if not wd or wd["status"] != "pending":
+        conn.close()
+        return
+    user_id, uc_amount = wd["user_id"], wd["amount_uc"]
+    refund_aim = (uc_amount / 60) * 100
+    
+    cursor.execute("UPDATE users SET aimcoin = aimcoin + ? WHERE user_id = ?", (refund_aim, user_id))
+    cursor.execute("UPDATE withdraw_requests SET status = 'rejected' WHERE id = ?", (req_id,))
+    conn.commit()
+    conn.close()
+
+    await callback.message.edit_text(f"❌ UC yechish arizasi (#{req_id}) rad etildi va mablag' foydalanuvchiga qaytarildi.")
+    try:
+        await bot.send_message(user_id, f"❌ UC yechish arizangiz rad etildi. {refund_aim:.1f} Aim balansingizga qaytarildi.")
+    except Exception:
+        pass
 
 @dp.message(F.text.regexp(r'^\d+(\.\d+)?$'))
 async def process_demo_amount(message: types.Message):
     user_id = message.from_user.id
     amount = float(message.text)
+    if amount > 5000:
+        return
     
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -283,7 +452,7 @@ async def startup_event():
             
     asyncio.create_task(run_telegram_bot())
 
-# --- PUBG AIMDROP ITEMS & CASES POOL (YANGI EHTTIMOLLIKLAR) ---
+# --- PUBG AIMDROP ITEMS & CASES POOL ---
 BASE_ICONS = [
     "https://cdn-icons-png.flaticon.com/512/3076/3076137.png",
     "https://cdn-icons-png.flaticon.com/512/1069/1069158.png",
@@ -301,7 +470,6 @@ for i in range(1, 21):
     price_aim = (price_uc / 60) * 100
     
     items = []
-    # 1-2: 30x qimmat buyumlar (0.001% ehtimol)
     for k in range(1, 3):
         items.append({
             "name": f"Aim Mythic Crate Item #{k} (30x)",
@@ -309,7 +477,6 @@ for i in range(1, 21):
             "img": BASE_ICONS[k % len(BASE_ICONS)],
             "chance": 0.001
         })
-    # 3-9: Qolgan 7 ta qimmatroq buyumlar (o'rtacha ehtimol)
     for k in range(3, 10):
         items.append({
             "name": f"Aim Legendary Item #{k}",
@@ -317,7 +484,6 @@ for i in range(1, 21):
             "img": BASE_ICONS[k % len(BASE_ICONS)],
             "chance": 0.5
         })
-    # 10-30: Qolgan 21 ta arzon buyumlar (katta tushish foizi bilan - sliv)
     for k in range(10, 31):
         items.append({
             "name": f"Aim Standard Crate Item #{k}",
@@ -334,10 +500,10 @@ for i in range(1, 21):
         "items": items
     }
 
-# --- FASTAPI WEB APP (AIMDROP PUBG DESIGN) ---
+# --- FASTAPI WEB APP ---
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    return HTMLResponse(content=""""
+    return HTMLResponse(content=f"""
     <!DOCTYPE html>
     <html lang="uz">
     <head>
@@ -347,7 +513,7 @@ async def index():
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
         <style>
-            :root {
+            :root {{
                 --bg-main: #0b0e14;
                 --bg-card: rgba(22, 27, 39, 0.8);
                 --bg-card-hover: rgba(30, 38, 54, 0.95);
@@ -357,87 +523,87 @@ async def index():
                 --text-main: #ffffff;
                 --text-muted: #94a3b8;
                 --border-color: rgba(245, 158, 11, 0.15);
-            }
-            * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-            body { background: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; background-image: radial-gradient(circle at 50% -20%, #78350f 0%, transparent 60%); }
+            }}
+            * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }}
+            body {{ background: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; background-image: radial-gradient(circle at 50% -20%, #78350f 0%, transparent 60%); }}
             
-            header { display: flex; justify-content: space-between; align-items: center; background: rgba(11, 14, 20, 0.9); backdrop-filter: blur(25px); padding: 14px 20px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; }
-            .logo { font-size: 22px; font-weight: 800; background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.8px; text-shadow: 0 0 30px rgba(245,158,11,0.4); }
-            .balance-container { background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); padding: 8px 16px; border-radius: 40px; font-weight: 700; color: #fde68a; font-size: 13px; box-shadow: 0 0 25px rgba(245, 158, 11, 0.2); display: flex; align-items: center; gap: 6px; }
+            header {{ display: flex; justify-content: space-between; align-items: center; background: rgba(11, 14, 20, 0.9); backdrop-filter: blur(25px); padding: 14px 20px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; }}
+            .logo {{ font-size: 22px; font-weight: 800; background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.8px; text-shadow: 0 0 30px rgba(245,158,11,0.4); }}
+            .balance-container {{ background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); padding: 8px 16px; border-radius: 40px; font-weight: 700; color: #fde68a; font-size: 13px; box-shadow: 0 0 25px rgba(245, 158, 11, 0.2); display: flex; align-items: center; gap: 6px; }}
 
-            .container { max-width: 1200px; margin: 0 auto; width: 100%; padding: 20px; flex: 1; padding-bottom: 110px; }
-            .tab-content { display: none; animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
-            .tab-content.active { display: block; }
-            @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+            .container {{ max-width: 1200px; margin: 0 auto; width: 100%; padding: 20px; flex: 1; padding-bottom: 110px; }}
+            .tab-content {{ display: none; animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1); }}
+            .tab-content.active {{ display: block; }}
+            @keyframes fadeIn {{ from {{ opacity: 0; transform: translateY(10px); }} to {{ opacity: 1; transform: translateY(0); }} }}
 
-            .section-title { font-size: 20px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: #f8fafc; }
-            .cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 16px; }
-            .case-card { background: var(--bg-card); backdrop-filter: blur(15px); border: 1px solid var(--border-color); border-radius: 22px; padding: 18px 12px; text-align: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
-            .case-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--accent-gradient); opacity: 0; transition: 0.3s; }
-            .case-card:hover { transform: translateY(-6px); background: var(--bg-card-hover); border-color: rgba(245, 158, 11, 0.5); box-shadow: 0 20px 40px rgba(245, 158, 11, 0.2); }
-            .case-card:hover::before { opacity: 1; }
-            .case-img { width: 75px; height: 75px; object-fit: contain; margin: 10px auto; filter: drop-shadow(0 12px 15px rgba(0,0,0,0.7)); transition: 0.3s; }
-            .case-card:hover .case-img { transform: scale(1.1); }
-            .btn-open { background: var(--accent-gradient); color: #000; border: none; padding: 10px; width: 100%; border-radius: 12px; font-weight: 800; margin-top: 12px; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35); font-size: 12px; transition: 0.2s; }
-            .btn-open:active { transform: scale(0.96); }
+            .section-title {{ font-size: 20px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: #f8fafc; }}
+            .cases-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 16px; }}
+            .case-card {{ background: var(--bg-card); backdrop-filter: blur(15px); border: 1px solid var(--border-color); border-radius: 22px; padding: 18px 12px; text-align: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; overflow: hidden; }}
+            .case-card::before {{ content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: var(--accent-gradient); opacity: 0; transition: 0.3s; }}
+            .case-card:hover {{ transform: translateY(-6px); background: var(--bg-card-hover); border-color: rgba(245, 158, 11, 0.5); box-shadow: 0 20px 40px rgba(245, 158, 11, 0.2); }}
+            .case-card:hover::before {{ opacity: 1; }}
+            .case-img {{ width: 75px; height: 75px; object-fit: contain; margin: 10px auto; filter: drop-shadow(0 12px 15px rgba(0,0,0,0.7)); transition: 0.3s; }}
+            .case-card:hover .case-img {{ transform: scale(1.1); }}
+            .btn-open {{ background: var(--accent-gradient); color: #000; border: none; padding: 10px; width: 100%; border-radius: 12px; font-weight: 800; margin-top: 12px; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35); font-size: 12px; transition: 0.2s; }}
+            .btn-open:active {{ transform: scale(0.96); }}
 
-            .case-view { background: var(--bg-card); backdrop-filter: blur(25px); border: 1px solid var(--border-color); border-radius: 26px; padding: 25px; text-align: center; max-width: 600px; margin: 0 auto; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }
-            .multi-select { display: flex; justify-content: center; gap: 8px; margin: 15px 0; flex-wrap: wrap; }
-            .count-btn { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; transition: 0.2s; }
-            .count-btn.active { background: var(--accent-orange); color: #000; border-color: var(--accent-orange); font-weight: 800; box-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }
+            .case-view {{ background: var(--bg-card); backdrop-filter: blur(25px); border: 1px solid var(--border-color); border-radius: 26px; padding: 25px; text-align: center; max-width: 600px; margin: 0 auto; box-shadow: 0 30px 60px rgba(0,0,0,0.8); }}
+            .multi-select {{ display: flex; justify-content: center; gap: 8px; margin: 15px 0; flex-wrap: wrap; }}
+            .count-btn {{ background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; transition: 0.2s; }}
+            .count-btn.active {{ background: var(--accent-orange); color: #000; border-color: var(--accent-orange); font-weight: 800; box-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }}
 
-            .roulettes-container { display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; margin: 15px 0; padding-right: 4px; }
-            .roulette-track-window { width: 100%; overflow: hidden; position: relative; height: 110px; background: #030406; border-radius: 14px; border: 1px solid var(--border-color); flex-shrink: 0; }
-            .roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #ef4444; transform: translateX(-50%); z-index: 10; box-shadow: 0 0 15px #ef4444; }
-            .roulette-track { display: flex; position: absolute; left: 0; top: 6px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }
-            .roulette-item { min-width: 98px; height: 96px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 5px; font-size: 11px; padding: 4px; }
-            .roulette-item img { width: 45px; height: 45px; object-fit: contain; margin-bottom: 4px; }
+            .roulettes-container {{ display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; margin: 15px 0; padding-right: 4px; }}
+            .roulette-track-window {{ width: 100%; overflow: hidden; position: relative; height: 110px; background: #030406; border-radius: 14px; border: 1px solid var(--border-color); flex-shrink: 0; }}
+            .roulette-pointer {{ position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #ef4444; transform: translateX(-50%); z-index: 10; box-shadow: 0 0 15px #ef4444; }}
+            .roulette-track {{ display: flex; position: absolute; left: 0; top: 6px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }}
+            .roulette-item {{ min-width: 98px; height: 96px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 5px; font-size: 11px; padding: 4px; }}
+            .roulette-item img {{ width: 45px; height: 45px; object-fit: contain; margin-bottom: 4px; }}
 
-            .win-actions-container { display: flex; gap: 10px; margin-top: 15px; justify-content: center; }
-            .btn-win-sell { background: #ef4444; color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; flex: 1; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35); }
-            .btn-win-keep { background: #10b981; color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; flex: 1; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35); }
+            .win-actions-container {{ display: flex; gap: 10px; margin-top: 15px; justify-content: center; }}
+            .btn-win-sell {{ background: #ef4444; color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; flex: 1; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35); }}
+            .btn-win-keep {{ background: #10b981; color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; flex: 1; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35); }}
 
-            .inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 12px; margin-top: 15px; max-height: 450px; overflow-y: auto; padding-right: 4px; }
-            .inv-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
-            .inv-card img { width: 55px; height: 55px; object-fit: contain; margin-bottom: 6px; }
-            .inv-actions { display: flex; gap: 6px; width: 100%; margin-top: 10px; }
-            .btn-inv-sell { background: #ef4444; color: #fff; border: none; padding: 6px; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }
-            .btn-inv-keep { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-color); padding: 6px; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }
+            .inventory-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 12px; margin-top: 15px; max-height: 450px; overflow-y: auto; padding-right: 4px; }}
+            .inv-card {{ background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }}
+            .inv-card img {{ width: 55px; height: 55px; object-fit: contain; margin-bottom: 6px; }}
+            .inv-actions {{ display: flex; gap: 6px; width: 100%; margin-top: 10px; }}
+            .btn-inv-sell {{ background: #ef4444; color: #fff; border: none; padding: 6px; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }}
+            .btn-inv-keep {{ background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-color); padding: 6px; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }}
 
-            .game-panel { background: var(--bg-card); backdrop-filter: blur(25px); border: 1px solid var(--border-color); border-radius: 26px; padding: 22px; max-width: 500px; margin: 0 auto; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.7); }
-            .games-menu { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
-            .game-tab-btn { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; flex: 1; }
-            .game-tab-btn.active { background: var(--accent-orange); color: #000; font-weight: 800; border-color: var(--accent-orange); }
+            .game-panel {{ background: var(--bg-card); backdrop-filter: blur(25px); border: 1px solid var(--border-color); border-radius: 26px; padding: 22px; max-width: 500px; margin: 0 auto; text-align: center; box-shadow: 0 30px 60px rgba(0,0,0,0.7); }}
+            .games-menu {{ display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }}
+            .game-tab-btn {{ background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; flex: 1; }}
+            .game-tab-btn.active {{ background: var(--accent-orange); color: #000; font-weight: 800; border-color: var(--accent-orange); }}
 
-            .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 15px 0; }
-            .mine-cell { aspect-ratio: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 10px; font-size: 18px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-            .mine-cell:hover { background: rgba(255,255,255,0.07); }
+            .mines-grid {{ display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 15px 0; }}
+            .mine-cell {{ aspect-ratio: 1; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 10px; font-size: 18px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }}
+            .mine-cell:hover {{ background: rgba(255,255,255,0.07); }}
 
-            .tower-grid { display: flex; flex-direction: column-reverse; gap: 6px; margin: 15px 0; }
-            .tower-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-            .tower-cell { background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); height: 42px; border-radius: 10px; cursor: pointer; font-weight: bold; color: #fff; }
+            .tower-grid {{ display: flex; flex-direction: column-reverse; gap: 6px; margin: 15px 0; }}
+            .tower-row {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }}
+            .tower-cell {{ background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); height: 42px; border-radius: 10px; cursor: pointer; font-weight: bold; color: #fff; }}
 
-            .crash-screen { height: 180px; background: #030406; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--border-color); margin: 15px 0; position: relative; overflow: hidden; }
-            .crash-multiplier { font-size: 38px; font-weight: 900; color: #10b981; text-shadow: 0 0 25px rgba(16, 185, 129, 0.4); }
+            .crash-screen {{ height: 180px; background: #030406; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--border-color); margin: 15px 0; position: relative; overflow: hidden; }}
+            .crash-multiplier {{ font-size: 38px; font-weight: 900; color: #10b981; text-shadow: 0 0 25px rgba(16, 185, 129, 0.4); }}
 
-            .panel { background: var(--bg-card); backdrop-filter: blur(25px); border: 1px solid var(--border-color); padding: 24px; border-radius: 26px; max-width: 440px; margin: 0 auto; box-shadow: 0 30px 60px rgba(0,0,0,0.7); }
-            .form-group { margin-bottom: 16px; text-align: left; }
-            .form-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 12px; font-weight: 700; }
-            .form-group input { width: 100%; padding: 14px; background: #030406; border: 1px solid var(--border-color); color: #fff; border-radius: 12px; font-size: 14px; text-align: center; outline: none; transition: 0.2s; }
-            .form-group input:focus { border-color: var(--accent-orange); box-shadow: 0 0 12px rgba(245, 158, 11, 0.25); }
+            .panel {{ background: var(--bg-card); backdrop-filter: blur(25px); border: 1px solid var(--border-color); padding: 24px; border-radius: 26px; max-width: 440px; margin: 0 auto; box-shadow: 0 30px 60px rgba(0,0,0,0.7); }}
+            .form-group {{ margin-bottom: 16px; text-align: left; }}
+            .form-group label {{ display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 12px; font-weight: 700; }}
+            .form-group input {{ width: 100%; padding: 14px; background: #030406; border: 1px solid var(--border-color); color: #fff; border-radius: 12px; font-size: 14px; text-align: center; outline: none; transition: 0.2s; }}
+            .form-group input:focus {{ border-color: var(--accent-orange); box-shadow: 0 0 12px rgba(245, 158, 11, 0.25); }}
             
-            .card-box { background: linear-gradient(135deg, #451a03 0%, #291102 100%); border: 1px solid rgba(245,158,11,0.3); border-radius: 16px; padding: 16px; margin-bottom: 16px; text-align: center; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
-            .card-number { font-size: 16px; font-weight: 800; letter-spacing: 1.5px; color: #fde68a; margin: 6px 0; }
-            .btn-copy { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-            .btn-copy:active { background: var(--accent-orange); }
+            .card-box {{ background: linear-gradient(135deg, #451a03 0%, #291102 100%); border: 1px solid rgba(245,158,11,0.3); border-radius: 16px; padding: 16px; margin-bottom: 16px; text-align: center; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }}
+            .card-number {{ font-size: 16px; font-weight: 800; letter-spacing: 1.5px; color: #fde68a; margin: 6px 0; }}
+            .btn-copy {{ background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; }}
+            .btn-copy:active {{ background: var(--accent-orange); }}
 
-            .btn-submit { background: var(--accent-gradient); color: #000; border: none; padding: 14px; width: 100%; border-radius: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35); font-size: 14px; transition: 0.2s; }
-            .btn-submit:active { transform: scale(0.98); }
+            .btn-submit {{ background: var(--accent-gradient); color: #000; border: none; padding: 14px; width: 100%; border-radius: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35); font-size: 14px; transition: 0.2s; }}
+            .btn-submit:active {{ transform: scale(0.98); }}
 
-            .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(11, 14, 20, 0.9); backdrop-filter: blur(25px); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }
-            .nav-item { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 700; transition: 0.2s; }
-            .nav-item.active { color: #fde68a; text-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }
-            .nav-item span.icon { font-size: 20px; }
+            .bottom-nav {{ position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(11, 14, 20, 0.9); backdrop-filter: blur(25px); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }}
+            .nav-item {{ background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 700; transition: 0.2s; }}
+            .nav-item.active {{ color: #fde68a; text-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }}
+            .nav-item span.icon {{ font-size: 20px; }}
         </style>
     </head>
     <body>
@@ -532,7 +698,7 @@ async def index():
                     <h3 style="margin-bottom: 14px; font-size: 18px;">💳 Aim Balansni To'ldirish</h3>
                     <div class="card-box">
                         <div style="font-size: 11px; color: #fde68a; font-weight: 700;">AIMDROP RASMIY KARTA (UZCARD / HUMO)</div>
-                        <div class="card-number" id="card-num-text">9860 1234 5678 9012</div>
+                        <div class="card-number" id="card-num-text">{CARD_NUMBER}</div>
                         <button class="btn-copy" onclick="copyCard()">📋 Karta Raqamini Nusxalash</button>
                     </div>
                     <div class="form-group"><label>UC Miqdori:</label><input type="number" id="uc-topup" value="60" oninput="calcSum()"></div>
@@ -792,7 +958,6 @@ async def index():
                 btn.classList.add('active');
             }
 
-            // --- MINES GAME LOGIC ---
             let minesCurrentWin = 0;
             let minesBetVal = 0;
             let minesBoard = document.getElementById('mines-board');
@@ -837,7 +1002,6 @@ async def index():
                 document.querySelectorAll('.mine-cell').forEach(x => x.onclick = null);
             }
 
-            // --- TOWER GAME LOGIC ---
             let towerCurrentWin = 0;
             let towerBoard = document.getElementById('tower-board');
             for(let i=0; i<4; i++) {
@@ -867,7 +1031,6 @@ async def index():
                 document.getElementById('tower-cashout').style.display = 'none';
             }
 
-            // --- CRASH GAME LOGIC ---
             function startCrash() {
                 let bet = parseFloat(document.getElementById('crash-bet').value) || 10;
                 if(balanceAim < bet) { alert("Aim yetarli emas!"); return; }
@@ -1022,11 +1185,6 @@ async def topup_webhook(uc: float = Form(...), user_id: int = Form(...), promo: 
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT id FROM payments WHERE amount = ? AND status = 'pending'", (uc,))
-    if cursor.fetchone():
-        conn.close()
-        return {"success": False, "msg": "⚠️ Bu miqdordagi to'lov hozirda boshqa foydalanuvchi tomonidan amalga oshirilmoqda. Biroz farqli summa kiriting!"}
-
     if promo:
         cursor.execute("SELECT max_uses, used_count FROM promos WHERE code = ?", (promo.upper(),))
         p_data = cursor.fetchone()
