@@ -2,7 +2,7 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <title>AimDrop - PUBG Case & Ecosystem</title>
+    <title>AimDrop - PUBG Case Ecosystem</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <style>
         body { background-color: #0b0f19; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -20,18 +20,21 @@
         <a class="navbar-brand fw-bold text-warning" href="/">🔥 AIMDROP.PUBG</a>
         <div class="ms-auto d-flex align-items-center">
             {% if user %}
-                <span class="me-3">ID: <b>{{ user.user_uuid }}</b></span>
-                <span class="me-3 text-success">Balans: <b>{{ user.balance }}</b> UC</span>
+                <span class="me-3">Foydalanuvchi: <b>{{ user.username }}</b></span>
+                <span class="me-3 text-success">Balans: <b id="userBalance">{{ user.balance }}</b> UC</span>
                 <a href="#profileModal" data-bs-toggle="modal" class="btn btn-sm btn-outline-warning me-2">Shaxsiy kabinet & To'lov</a>
                 <a href="/logout" class="btn btn-sm btn-danger">Chiqish</a>
             {% else %}
-                <a href="/login/google" class="btn btn-sm btn-light me-2">Google orqali kirish</a>
-                <a href="/login/telegram" class="btn btn-sm btn-info">Telegram orqali kirish</a>
+                <a href="/login" class="btn btn-sm btn-warning me-2">Kirish</a>
+                <a href="/register" class="btn btn-sm btn-outline-light">Ro'yxatdan o'tish</a>
             {% endif %}
         </div>
     </nav>
 
     <div class="container my-4">
+        <!-- XABARNOMA -->
+        <div id="notificationArea"></div>
+
         <!-- CRASH O'YINI -->
         <div class="card p-4 text-center mb-4">
             <h3 class="text-info">Global Crash O'yini</h3>
@@ -69,25 +72,34 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content bg-dark text-white border-secondary">
                 <div class="modal-header">
-                    <h5 class="modal-title">Shaxsiy Kabinet & Balans</h5>
+                    <h5 class="modal-title">Shaxsiy Kabinet & Moliya</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-warning">
-                        <b>Balansni to'ldirish (Donate):</b> Quyidagi karta raqamiga pul o'tkazing va summani kiritib tasdiqlang.<br>
+                        <b>Qo'llanma:</b> Quyidagi karta raqamiga pul o'tkazing va chek rasmini yuklab yuboring. Admin tasdiqlagach balansga UC tushadi.<br>
                         💳 Karta: <code class="fs-5 text-dark bg-light px-2 rounded">5614 6865 0763 1458</code>
                     </div>
-                    <h5>Balansni To'ldirish</h5>
-                    <div class="input-group mb-3">
-                        <input type="number" id="topupAmount" class="form-control bg-secondary text-white border-0" placeholder="Summa (UC)">
-                        <button class="btn btn-success" onclick="topUp()">To'ldirishni Tasdiqlash</button>
-                    </div>
-                    <hr>
+                    
+                    <h5>Balansni To'ldirish (Chek yuborish)</h5>
+                    <form id="topupForm" onsubmit="submitTopup(event)">
+                        <div class="mb-3">
+                            <label class="form-label">Summa (UC)</label>
+                            <input type="number" id="topupAmount" class="form-control bg-secondary text-white border-0" required placeholder="Masalan: 100">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">To'lov cheki (Skrinshot)</label>
+                            <input type="file" id="checkFile" class="form-control bg-secondary text-white border-0" accept="image/*" required>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Chekni Adminga Yuborish</button>
+                    </form>
+                    
+                    <hr class="my-4">
                     <h5>UC Yechish (PUBG ID)</h5>
                     <div class="input-group mb-3">
                         <input type="text" id="pubgId" class="form-control bg-secondary text-white border-0 me-2" placeholder="PUBG ID">
                         <input type="number" id="ucAmount" class="form-control bg-secondary text-white border-0" placeholder="UC (min 60)">
-                        <button class="btn btn-warning" onclick="withdrawUC()">UC Olish</button>
+                        <button class="btn btn-warning" onclick="withdrawUC()">UC Chiqarish Surovi</button>
                     </div>
                 </div>
             </div>
@@ -119,14 +131,22 @@
                 });
         }
 
-        function topUp() {
+        function submitTopup(event) {
+            event.preventDefault();
             let amount = document.getElementById('topupAmount').value;
+            let fileInput = document.getElementById('checkFile').files[0];
+            
             let formData = new FormData();
             formData.append('amount', amount);
+            formData.append('check_image', fileInput);
             formData.append('card', '5614686507631458');
+
             fetch('/api/topup', { method: 'POST', body: formData })
                 .then(res => res.json())
-                .then(data => { alert(data.msg); location.reload(); });
+                .then(data => {
+                    alert(data.msg);
+                    location.reload();
+                });
         }
 
         function withdrawUC() {
