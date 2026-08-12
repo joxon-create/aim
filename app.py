@@ -1262,4 +1262,7 @@ async def partner_stats(user_id: int):
     return {"earned": res["partner_earned"] if res else 0.0}
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=10000)
+    try:
+        uvicorn.run("app:app", host="0.0.0.0", port=10000)
+    except Exception as e:
+        print(f"Xatolik yuz berdi: {e}")
