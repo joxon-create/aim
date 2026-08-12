@@ -1,119 +1,72 @@
 import sqlite3
 
-DB_NAME = 'aimdrop.db'
-
-def get_connection():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def create_tables():
-    conn = get_connection()
+def init_db():
+    conn = sqlite3.connect("bot_database.db")
     cursor = conn.cursor()
     
-    # 1. Foydalanuvchilar
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        telegram_id INTEGER UNIQUE NOT NULL,
-        username TEXT,
-        balance REAL DEFAULT 0.00,
-        demo_balance REAL DEFAULT 0.00,
-        is_partner INTEGER DEFAULT 0,
-        partner_requested INTEGER DEFAULT 0,
-        pass_level INTEGER DEFAULT 1,
-        pass_xp INTEGER DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    ''')
+    # Foydalanuvchilar jadvali
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY,
+            username TEXT,
+            site_id TEXT,
+            balance REAL DEFAULT 0,
+            status TEXT DEFAULT 'pending' -- pending, approved, blocked
+        )
+    """)
     
-    # 2. Adminlar
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS admins (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        telegram_id INTEGER UNIQUE NOT NULL,
-        username TEXT,
-        added_by INTEGER,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    ''')
+    # Adminlar jadvali
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS admins (
+            user_id INTEGER PRIMARY KEY
+        )
+    """)
     
-    # 3. Qutilar (Cases)
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS cases (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        price REAL NOT NULL,
-        image_url TEXT,
-        is_free INTEGER DEFAULT 0,
-        is_active INTEGER DEFAULT 1
-    )
-    ''')
+    # Kunlik olingan coinlar (limit uchun)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS daily_limits (
+            user_id INTEGER,
+            amount REAL,
+            date TEXT
+        )
+    """)
     
-    # 4. Buyumlar (Skins)
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        case_id INTEGER,
-        name TEXT NOT NULL,
-        price REAL NOT NULL,
-        image_url TEXT,
-        drop_chance REAL NOT NULL,
-        FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
-    )
-    ''')
+    # Promokodlar jadvali
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS promos (
+            code TEXT PRIMARY KEY,
+            promo_type TEXT, -- '20_percent' yoki 'normal'
+            max_activations INTEGER,
+            current_activations INTEGER DEFAULT 0
+        )
+    """)
     
-    # 5. PUBG UC chiqarish so'rovlari
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS uc_requests (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        pubg_id TEXT NOT NULL,
-        uc_amount INTEGER NOT NULL,
-        price_som REAL NOT NULL,
-        status TEXT DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-    ''')
+    # Depozitlar (20% promo statistikasi uchun)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS deposits (
+            user_id INTEGER,
+            amount REAL,
+            promo_code TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     
-    # 6. Promo-kodlar
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS promo_codes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        code TEXT UNIQUE NOT NULL,
-        reward_amount REAL NOT NULL,
-        max_uses INTEGER DEFAULT 100,
-        used_count INTEGER DEFAULT 0,
-        is_partner INTEGER DEFAULT 0,
-        partner_id INTEGER,
-        total_donated REAL DEFAULT 0.00,
-        FOREIGN KEY (partner_id) REFERENCES users(id) ON DELETE CASCADE
-    )
-    ''')
-
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS user_promos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        promo_id INTEGER,
-        UNIQUE(user_id, promo_id),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (promo_id) REFERENCES promo_codes(id) ON DELETE CASCADE
-    )
-    ''')
-
+    # Case buyumlari
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS case_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            price REAL
+        )
+    """)
+    
     conn.commit()
     conn.close()
 
-create_tables()
-
-def is_admin(telegram_id: int) -> bool:
-    if telegram_id == 8692517241:
-        return True
-    conn = get_connection()
+# Boshlang'ich adminni qo'shish (O'z Telegram IDingizni yozing)
+def add_super_admin(admin_id: int):
+    conn = sqlite3.connect("bot_database.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM admins WHERE telegram_id = ?", (telegram_id,))
-    res = cursor.fetchone()
+    cursor.execute("INSERT OR IGNORE INTO admins (user_id) VALUES (?)", (admin_id,))
+    conn.commit()
     conn.close()
-    return res is not None
