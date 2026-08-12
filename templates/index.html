@@ -2,39 +2,129 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <title>PUBG Case & Ecosystem</title>
+    <title>AimDrop - PUBG Case & Ecosystem</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
     <style>
-        body { background-color: #121212; color: #ffffff; font-family: sans-serif; }
-        .card { background-color: #1e1e1e; border: none; }
-        .crash-screen { font-size: 48px; font-weight: bold; color: #00ffcc; text-align: center; padding: 40px; }
+        body { background-color: #0b0f19; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar { background-color: #131823; border-bottom: 1px solid #1f293d; }
+        .card { background-color: #161d2e; border: 1px solid #222e45; border-radius: 12px; }
+        .case-card { transition: 0.3s; cursor: pointer; }
+        .case-card:hover { transform: translateY(-5px); border-color: #f39c12; }
+        .crash-box { font-size: 52px; font-weight: bold; color: #00ffcc; text-shadow: 0 0 15px rgba(0,255,204,0.3); }
+        .btn-custom { background: linear-gradient(45deg, #f39c12, #e67e22); color: white; font-weight: bold; border: none; }
+        .btn-custom:hover { background: linear-gradient(45deg, #e67e22, #d35400); color: white; }
     </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h1 class="text-center">PUBG CASE & ECOSYSTEM</h1>
-        <hr>
-        <div class="row mt-4">
-            <div class="col-md-12">
-                <div class="card p-4 text-center">
-                    <h3>Global Crash O'yini</h3>
-                    <div class="crash-screen" id="multiplier">1.00x</div>
-                    <p id="status-text" class="text-warning">Kutilmoqda...</p>
+    <nav class="navbar navbar-expand-lg navbar-dark px-4">
+        <a class="navbar-brand fw-bold text-warning" href="/">🔥 AIMDROP.PUBG</a>
+        <div class="ms-auto d-flex align-items-center">
+            {% if user %}
+                <span class="me-3">ID: <b>{{ user.user_uuid }}</b></span>
+                <span class="me-3 text-success">Balans: <b>{{ user.balance }}</b> Aim</span>
+                <a href="#profileModal" data-bs-toggle="modal" class="btn btn-sm btn-outline-warning me-2">Shaxsiy kabinet</a>
+                <a href="/logout" class="btn btn-sm btn-danger">Chiqish</a>
+            {% else %}
+                <a href="/login/google" class="btn btn-sm btn-light me-2">Google orqali kirish</a>
+                <a href="/login/telegram" class="btn btn-sm btn-info">Telegram orqali kirish</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="container my-4">
+        <!-- CRASH O'YINI SECTION -->
+        <div class="card p-4 text-center mb-4">
+            <h3 class="text-info">Global Crash O'yini</h3>
+            <div class="crash-box" id="multiplier">1.00x</div>
+            <p id="status-text" class="text-warning fw-bold">Kutilmoqda...</p>
+        </div>
+
+        <!-- CASES SECTION (20 ta case) -->
+        <h2 class="mb-3 text-warning">PUBG Caselar (20 ta to'plam)</h2>
+        <div class="row">
+            {% for key, case in cases.items() %}
+            <div class="col-md-3 mb-4">
+                <div class="card case-card p-3 text-center h-100">
+                    <img src="{{ case.img }}" class="mx-auto mb-3" style="width: 80px; height: 80px; object-fit: contain;">
+                    <h5>{{ case.name }}</h5>
+                    <p class="text-success fw-bold">{{ case.price }} Aim</p>
+                    <button class="btn btn-custom btn-sm mt-auto" onclick="openCase('{{ key }}')">Case Ochish</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- SHAXSIY KABINET MODALI -->
+    <div class="modal fade" id="profileModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header">
+                    <h5 class="modal-title">Shaxsiy Kabinet & Balans</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h5>Balansni To'ldirish</h5>
+                    <div class="input-group mb-3">
+                        <input type="number" id="topupAmount" class="form-control bg-secondary text-white border-0" placeholder="Summa (Aim)">
+                        <button class="btn btn-success" onclick="topUp()">To'ldirish</button>
+                    </div>
+                    <hr>
+                    <h5>UC Yechish (PUBG ID)</h5>
+                    <div class="input-group mb-3">
+                        <input type="text" id="pubgId" class="form-control bg-secondary text-white border-0 me-2" placeholder="PUBG ID">
+                        <input type="number" id="ucAmount" class="form-control bg-secondary text-white border-0" placeholder="UC (min 60)">
+                        <button class="btn btn-warning" onclick="withdrawUC()">UC Olish</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
         function updateCrash() {
             fetch('/api/crash_status')
-                .then(response => response.json())
+                .then(res => res.json())
                 .then(data => {
                     document.getElementById('multiplier').innerText = data.multiplier + 'x';
                     document.getElementById('status-text').innerText = data.status.toUpperCase();
                 });
         }
         setInterval(updateCrash, 200);
+
+        function openCase(caseId) {
+            fetch('/api/open_case/' + caseId, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        alert('Tabriklaymiz! Tushdi: ' + data.item.name + ' (' + data.item.price + ' Aim)');
+                        location.reload();
+                    } else {
+                        alert(data.msg);
+                    }
+                });
+        }
+
+        function topUp() {
+            let amount = document.getElementById('topupAmount').value;
+            let formData = new FormData();
+            formData.append('amount', amount);
+            fetch('/api/topup', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => { alert(data.msg); location.reload(); });
+        }
+
+        function withdrawUC() {
+            let pubgId = document.getElementById('pubgId').value;
+            let ucAmount = document.getElementById('ucAmount').value;
+            let formData = new FormData();
+            formData.append('pubg_id', pubgId);
+            formData.append('uc_amount', ucAmount);
+            fetch('/api/withdraw_uc', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => { alert(data.msg); location.reload(); });
+        }
     </script>
 </body>
 </html>
