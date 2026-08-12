@@ -15,8 +15,8 @@ BOT_TOKEN = "8253855521:AAF4l7kWU_hKgMysrmHFJjsV2wDVZKtUgRs"
 SUPER_ADMIN_ID = 8692517241
 
 ADMINS = [SUPER_ADMIN_ID, 123456789] 
-# O'zingizning karta raqamingizni shu yerga yozing:
-CARD_NUMBER = "5614686597631458"
+# O'zingizning karta raqamingiz o'rnatildi:
+CARD_NUMBER = "5614686507631458"
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
