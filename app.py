@@ -189,7 +189,7 @@ async def reject_demo(callback: types.CallbackQuery):
     conn.close()
     await callback.message.edit_text(f"❌ Aim so'rov (#{req_id}) rad etildi.")
 
-# --- FASTAPI STARTUP (ASOSIY OQIMDA ISHLATISH - XATOLIKNI OLDINI OLISH) ---
+# --- FASTAPI STARTUP ---
 @app.on_event("startup")
 async def startup_event():
     async def run_telegram_bot():
@@ -222,7 +222,7 @@ for i in range(1, 21):
         "items": items
     }
 
-# --- FASTAPI WEB APP (HTML/JS) ---
+# --- FASTAPI WEB APP (PREMIUM UI/UX) ---
 @app.get("/", response_class=HTMLResponse)
 async def index():
     return HTMLResponse(content="""
@@ -231,100 +231,112 @@ async def index():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AIMDROP - Ultimate Aim & UC</title>
+        <title>AIMDROP - Ultimate Cyber Gaming</title>
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
         <style>
-            * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-            body { background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); color: #fff; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+            :root {
+                --bg-main: #07090e;
+                --bg-card: rgba(18, 24, 38, 0.7);
+                --accent-gold: #f59e0b;
+                --accent-gradient: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+                --text-main: #f8fafc;
+                --text-muted: #94a3b8;
+                --border-color: rgba(255, 255, 255, 0.08);
+            }
+            * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+            body { background: var(--bg-main); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; background-image: radial-gradient(circle at 50% 0%, #1e1b4b 0%, transparent 50%); }
             
-            header { display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(15px); padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); position: sticky; top: 0; z-index: 1000; }
-            .logo { font-size: 20px; font-weight: 900; background: linear-gradient(135deg, #f59e0b, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 1px; }
-            .balance-container { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.4); padding: 6px 14px; border-radius: 30px; font-weight: 700; color: #fbbf24; font-size: 13px; box-shadow: 0 0 15px rgba(245, 158, 11, 0.15); }
+            header { display: flex; justify-content: space-between; align-items: center; background: rgba(7, 9, 14, 0.85); backdrop-filter: blur(20px); padding: 14px 20px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1000; }
+            .logo { font-size: 22px; font-weight: 800; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 0.5px; }
+            .balance-container { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 8px 16px; border-radius: 40px; font-weight: 700; color: #fbbf24; font-size: 13px; box-shadow: 0 0 20px rgba(245, 158, 11, 0.15); display: flex; align-items: center; gap: 6px; }
 
-            .container { max-width: 1200px; margin: 0 auto; width: 100%; padding: 20px; flex: 1; padding-bottom: 100px; }
-            .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
+            .container { max-width: 1200px; margin: 0 auto; width: 100%; padding: 20px; flex: 1; padding-bottom: 110px; }
+            .tab-content { display: none; animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
             .tab-content.active { display: block; }
-            @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+            @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
-            .cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
-            .case-card { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.06); border-radius: 18px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5); transform-style: preserve-3d; }
-            .case-card:hover { transform: translateY(-6px) scale(1.02); border-color: rgba(245, 158, 11, 0.5); box-shadow: 0 20px 35px -10px rgba(245, 158, 11, 0.2); }
-            .case-img { width: 80px; height: 80px; object-fit: contain; margin: 10px auto; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.6)); }
-            .btn-open { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; padding: 8px; width: 100%; border-radius: 8px; font-weight: 700; margin-top: 10px; cursor: pointer; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); }
+            .section-title { font-size: 20px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+            .cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 16px; }
+            .case-card { background: var(--bg-card); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: 20px; padding: 18px 12px; text-align: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 30px rgba(0,0,0,0.4); position: relative; overflow: hidden; }
+            .case-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--accent-gradient); opacity: 0; transition: 0.3s; }
+            .case-card:hover { transform: translateY(-5px); border-color: rgba(245, 158, 11, 0.4); box-shadow: 0 15px 35px rgba(245, 158, 11, 0.15); }
+            .case-card:hover::before { opacity: 1; }
+            .case-img { width: 75px; height: 75px; object-fit: contain; margin: 10px auto; filter: drop-shadow(0 12px 12px rgba(0,0,0,0.6)); transition: 0.3s; }
+            .case-card:hover .case-img { transform: scale(1.08); }
+            .btn-open { background: var(--accent-gradient); color: #fff; border: none; padding: 10px; width: 100%; border-radius: 12px; font-weight: 700; margin-top: 12px; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); font-size: 12px; transition: 0.2s; }
+            .btn-open:active { transform: scale(0.96); }
 
-            .case-view { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 25px; text-align: center; max-width: 650px; margin: 0 auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); }
+            .case-view { background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 24px; padding: 25px; text-align: center; max-width: 600px; margin: 0 auto; box-shadow: 0 25px 50px rgba(0,0,0,0.7); }
             .multi-select { display: flex; justify-content: center; gap: 8px; margin: 15px 0; flex-wrap: wrap; }
-            .count-btn { background: #334155; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-            .count-btn.active { background: #f59e0b; color: #0f172a; border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+            .count-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; transition: 0.2s; }
+            .count-btn.active { background: var(--accent-gold); color: #07090e; border-color: var(--accent-gold); box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
 
-            .roulettes-container { display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; margin: 15px 0; padding-right: 5px; }
-            .roulettes-container::-webkit-scrollbar { width: 4px; }
-            .roulettes-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-
-            .roulette-track-window { width: 100%; overflow: hidden; position: relative; height: 110px; background: #020617; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
-            .roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #ef4444; transform: translateX(-50%); z-index: 10; box-shadow: 0 0 10px #ef4444; }
+            .roulettes-container { display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; margin: 15px 0; padding-right: 4px; }
+            .roulette-track-window { width: 100%; overflow: hidden; position: relative; height: 110px; background: #030508; border-radius: 14px; border: 1px solid var(--border-color); flex-shrink: 0; }
+            .roulette-pointer { position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; background: #ef4444; transform: translateX(-50%); z-index: 10; box-shadow: 0 0 12px #ef4444; }
             .roulette-track { display: flex; position: absolute; left: 0; top: 6px; transition: transform 4s cubic-bezier(0.08, 0.82, 0.17, 1); }
-            .roulette-item { min-width: 98px; height: 96px; background: #1e293b; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 5px; font-size: 11px; padding: 4px; }
+            .roulette-item { min-width: 98px; height: 96px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 5px; font-size: 11px; padding: 4px; }
             .roulette-item img { width: 45px; height: 45px; object-fit: contain; margin-bottom: 4px; }
 
-            /* Inventory Grid */
             .inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-top: 15px; max-height: 450px; overflow-y: auto; padding-right: 4px; }
-            .inv-card { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
-            .inv-card img { width: 50px; height: 50px; object-fit: contain; margin-bottom: 6px; }
-            .inv-actions { display: flex; gap: 5px; width: 100%; margin-top: 8px; }
-            .btn-sell { background: #ef4444; color: #fff; border: none; padding: 6px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }
-            .btn-keep { background: #34d399; color: #0f172a; border: none; padding: 6px; border-radius: 6px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }
+            .inv-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+            .inv-card img { width: 55px; height: 55px; object-fit: contain; margin-bottom: 6px; }
+            .inv-actions { display: flex; gap: 6px; width: 100%; margin-top: 10px; }
+            .btn-sell { background: #ef4444; color: #fff; border: none; padding: 6px; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }
+            .btn-keep { background: #34d399; color: #07090e; border: none; padding: 6px; border-radius: 8px; font-size: 10px; font-weight: bold; cursor: pointer; flex: 1; }
 
-            /* Mini Games UI */
-            .game-panel { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 20px; max-width: 500px; margin: 0 auto; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
-            .games-menu { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
-            .game-tab-btn { background: #334155; border: none; color: #fff; padding: 8px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; }
-            .game-tab-btn.active { background: #f59e0b; color: #0f172a; }
+            .game-panel { background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border-color); border-radius: 24px; padding: 22px; max-width: 500px; margin: 0 auto; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
+            .games-menu { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+            .game-tab-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 14px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 12px; flex: 1; }
+            .game-tab-btn.active { background: var(--accent-gold); color: #07090e; border-color: var(--accent-gold); }
 
             .mines-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 15px 0; }
-            .mine-cell { aspect-ratio: 1; background: #334155; border: none; border-radius: 8px; font-size: 20px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-            .mine-cell:hover { background: #475569; }
+            .mine-cell { aspect-ratio: 1; background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); border-radius: 10px; font-size: 18px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+            .mine-cell:hover { background: rgba(255,255,255,0.08); }
 
             .tower-grid { display: flex; flex-direction: column-reverse; gap: 6px; margin: 15px 0; }
             .tower-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-            .tower-cell { background: #334155; border: none; height: 40px; border-radius: 8px; cursor: pointer; font-weight: bold; color: #fff; }
+            .tower-cell { background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); height: 42px; border-radius: 10px; cursor: pointer; font-weight: bold; color: #fff; }
 
-            .crash-screen { height: 180px; background: #020617; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1); margin: 15px 0; position: relative; overflow: hidden; }
-            .crash-multiplier { font-size: 36px; font-weight: 900; color: #34d399; text-shadow: 0 0 20px rgba(52, 211, 153, 0.4); }
+            .crash-screen { height: 180px; background: #030508; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--border-color); margin: 15px 0; position: relative; overflow: hidden; }
+            .crash-multiplier { font-size: 38px; font-weight: 900; color: #34d399; text-shadow: 0 0 25px rgba(52, 211, 153, 0.4); }
 
-            .panel { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.08); padding: 24px; border-radius: 20px; max-width: 440px; margin: 0 auto; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
-            .form-group { margin-bottom: 15px; text-align: left; }
-            .form-group label { display: block; margin-bottom: 6px; color: #94a3b8; font-size: 12px; font-weight: 600; }
-            .form-group input { width: 100%; padding: 12px; background: #020617; border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 10px; font-size: 14px; text-align: center; outline: none; }
-            .btn-submit { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; padding: 12px; width: 100%; border-radius: 10px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
+            .panel { background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border-color); padding: 24px; border-radius: 24px; max-width: 440px; margin: 0 auto; box-shadow: 0 25px 50px rgba(0,0,0,0.6); }
+            .form-group { margin-bottom: 16px; text-align: left; }
+            .form-group label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 12px; font-weight: 700; }
+            .form-group input { width: 100%; padding: 14px; background: #030508; border: 1px solid var(--border-color); color: #fff; border-radius: 12px; font-size: 14px; text-align: center; outline: none; transition: 0.2s; }
+            .form-group input:focus { border-color: var(--accent-gold); box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
+            .btn-submit { background: var(--accent-gradient); color: #fff; border: none; padding: 14px; width: 100%; border-radius: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3); font-size: 14px; transition: 0.2s; }
+            .btn-submit:active { transform: scale(0.98); }
 
-            .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(15px); border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }
-            .nav-item { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-weight: 600; }
-            .nav-item.active { color: #f59e0b; text-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+            .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(7, 9, 14, 0.9); backdrop-filter: blur(20px); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000; }
+            .nav-item { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-weight: 700; transition: 0.2s; }
+            .nav-item.active { color: #fbbf24; text-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
             .nav-item span.icon { font-size: 20px; }
         </style>
     </head>
     <body>
         <header>
             <div class="logo">AIMDROP</div>
-            <div class="balance-container"><span id="balance">100.00</span> Aim (<span id="uc-balance">60</span> UC)</div>
+            <div class="balance-container">💎 <span id="balance">100.00</span> Aim (<span id="uc-balance">60</span> UC)</div>
         </header>
 
         <div class="container">
             <!-- Cases Tab -->
             <div id="cases-tab" class="tab-content active">
-                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 700;">AimDrop Keyslari</h3>
+                <div class="section-title">📦 Premium AimDrop Keyslari</div>
                 <div class="cases-grid" id="cases-grid"></div>
             </div>
 
             <!-- Case Detail View -->
             <div id="case-detail-tab" class="tab-content">
                 <div class="case-view">
-                    <img id="detail-img" src="" style="width: 75px; height: 75px; object-fit: contain; margin-bottom: 6px;">
-                    <h2 id="detail-name" style="margin-bottom: 4px; font-size: 18px;">AimDrop Case</h2>
-                    <p style="color: #f59e0b; font-weight: 700; font-size: 15px;" id="detail-price-text">10 UC (16.67 Aim)</p>
+                    <img id="detail-img" src="" style="width: 85px; height: 85px; object-fit: contain; margin-bottom: 8px;">
+                    <h2 id="detail-name" style="margin-bottom: 4px; font-size: 19px; font-weight: 800;">AimDrop Case</h2>
+                    <p style="color: #fbbf24; font-weight: 700; font-size: 15px;" id="detail-price-text">10 UC (16.67 Aim)</p>
                     
-                    <p style="font-size: 12px; color: #94a3b8; margin-top: 10px;">Nechta ochishni tanlang:</p>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 14px;">Ochish sonini tanlang:</p>
                     <div class="multi-select">
                         <button class="count-btn active" onclick="setCount(1, this)">1 ta</button>
                         <button class="count-btn" onclick="setCount(2, this)">2 ta</button>
@@ -334,7 +346,7 @@ async def index():
                         <button class="count-btn" onclick="setCount(10, this)">10 ta</button>
                     </div>
 
-                    <p style="font-size: 13px; margin-bottom: 10px;">Umumiy narx: <span id="total-open-price" style="color: #fbbf24; font-weight: bold;">10</span> UC (<span id="total-open-aim" style="color: #34d399; font-weight: bold;">16.67</span> Aim)</p>
+                    <p style="font-size: 13px; margin-bottom: 12px;">Umumiy qiymat: <span id="total-open-price" style="color: #fbbf24; font-weight: bold;">10</span> UC (<span id="total-open-aim" style="color: #34d399; font-weight: bold;">16.67</span> Aim)</p>
                     
                     <div id="roulette-section" style="display: none;">
                         <div class="roulettes-container" id="roulettes-container-box"></div>
@@ -342,17 +354,17 @@ async def index():
 
                     <div id="win-result" style="font-size: 14px; font-weight: bold; color: #34d399; margin: 12px 0; min-height: 25px;"></div>
                     
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn-submit" onclick="openSelectedCase()" id="action-btn">AimDrop Barchasini Ochish</button>
-                        <button class="count-btn" onclick="switchTab('cases', document.querySelectorAll('.bottom-nav button')[0])" style="flex:1;">Orqaga</button>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="btn-submit" onclick="openSelectedCase()" id="action-btn">Hozir Ochish</button>
+                        <button class="count-btn" onclick="switchTab('cases', document.querySelectorAll('.bottom-nav button')[0])" style="flex:1; display:flex; align-items:center; justify-content:center;">Orqaga</button>
                     </div>
                 </div>
             </div>
 
             <!-- Inventory Tab -->
             <div id="inventory-tab" class="tab-content">
-                <h3 style="margin-bottom: 12px; font-size: 18px; font-weight: 700;">Aim Inventarim</h3>
-                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">Olingan buyumlarni sotib Aim/UC ga aylantirishingiz yoki saqlab turishingiz mumkin.</p>
+                <div class="section-title">🎒 Mening Inventarim</div>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Yutuqlaringizni sotib Aim balansga o'tkazing yoki inventarda saqlang.</p>
                 <div class="inventory-grid" id="inventory-grid"></div>
             </div>
 
@@ -360,48 +372,48 @@ async def index():
             <div id="games-tab" class="tab-content">
                 <div class="game-panel">
                     <div class="games-menu">
-                        <button class="game-tab-btn active" onclick="switchGame('mines', this)">Aim Mines</button>
-                        <button class="game-tab-btn" onclick="switchGame('tower', this)">Aim Tower</button>
-                        <button class="game-tab-btn" onclick="switchGame('crash', this)">Aim Crash</button>
+                        <button class="game-tab-btn active" onclick="switchGame('mines', this)">Mines</button>
+                        <button class="game-tab-btn" onclick="switchGame('tower', this)">Tower</button>
+                        <button class="game-tab-btn" onclick="switchGame('crash', this)">Crash</button>
                     </div>
 
                     <div id="game-mines" class="sub-game">
-                        <h3 style="margin-bottom: 10px;">Aim Mines O'yini</h3>
+                        <h3 style="margin-bottom: 12px; font-size: 16px;">Aim Mines O'yini</h3>
                         <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="mines-bet" value="10"></div>
                         <div class="mines-grid" id="mines-board"></div>
-                        <button class="btn-submit" onclick="startMines()">Aim O'yinni Boshlash</button>
+                        <button class="btn-submit" onclick="startMines()">O'yinni Boshlash</button>
                     </div>
 
                     <div id="game-tower" class="sub-game" style="display: none;">
-                        <h3 style="margin-bottom: 10px;">Aim Tower O'yini</h3>
+                        <h3 style="margin-bottom: 12px; font-size: 16px;">Aim Tower O'yini</h3>
                         <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="tower-bet" value="10"></div>
                         <div class="tower-grid" id="tower-board"></div>
-                        <button class="btn-submit" onclick="startTower()">Aim Qurishni Boshlash</button>
+                        <button class="btn-submit" onclick="startTower()">Qurishni Boshlash</button>
                     </div>
 
                     <div id="game-crash" class="sub-game" style="display: none;">
-                        <h3 style="margin-bottom: 10px;">Aim Crash O'yini</h3>
+                        <h3 style="margin-bottom: 12px; font-size: 16px;">Aim Crash O'yini</h3>
                         <div class="form-group"><label>Tikish (Aim):</label><input type="number" id="crash-bet" value="10"></div>
                         <div class="crash-screen">
                             <div class="crash-multiplier" id="crash-mult">1.00x</div>
                         </div>
-                        <button class="btn-submit" onclick="startCrash()" id="crash-btn">Aim Uchishni Boshlash</button>
+                        <button class="btn-submit" onclick="startCrash()" id="crash-btn">Uchishni Boshlash</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Wallet Tab (To'ldirish + Promo Slot) -->
+            <!-- Wallet Tab (To'ldirish + Promokod) -->
             <div id="wallet-tab" class="tab-content">
                 <div class="panel" id="wallet-step-1">
-                    <h3 style="margin-bottom: 15px;">Aim Balansni To'ldirish</h3>
-                    <div class="form-group"><label>Karta raqami:</label><input type="text" id="card-input" placeholder="8600 0000 0000 0000"></div>
-                    <div class="form-group"><label>UC miqdori (Aim ekvivalenti bilan):</label><input type="number" id="uc-topup" value="60" oninput="calcSum()"></div>
-                    <div class="form-group"><label>🎁 Aim Hamkor Promokodi (+20% Bonus):</label><input type="text" id="wallet-promo-input" placeholder="PROMOKOD (Ixtiyoriy)"></div>
-                    <p style="color: #f59e0b; margin-bottom: 15px; font-size: 13px; font-weight: 600;">Summa: <span id="sum-calc">14000</span> so'm</p>
-                    <button class="btn-submit" onclick="requestSMS()">SMS kodni olish</button>
+                    <h3 style="margin-bottom: 16px; font-size: 18px;">💳 Balansni To'ldirish</h3>
+                    <div class="form-group"><label>Karta Raqami:</label><input type="text" id="card-input" placeholder="8600 0000 0000 0000"></div>
+                    <div class="form-group"><label>UC Miqdori:</label><input type="number" id="uc-topup" value="60" oninput="calcSum()"></div>
+                    <div class="form-group"><label>🎁 Hamkor Promokodi (+20% Bonus):</label><input type="text" id="wallet-promo-input" placeholder="PROMOKOD (Ixtiyoriy)"></div>
+                    <p style="color: #fbbf24; margin-bottom: 16px; font-size: 14px; font-weight: 700;">Summa: <span id="sum-calc">14000</span> so'm</p>
+                    <button class="btn-submit" onclick="requestSMS()">SMS Kodni Olish</button>
                 </div>
                 <div class="panel" id="wallet-step-2" style="display: none;">
-                    <h3 style="margin-bottom: 15px;">Aim SMS Tasdiqlash</h3>
+                    <h3 style="margin-bottom: 16px; font-size: 18px;">🔒 SMS Tasdiqlash</h3>
                     <div class="form-group"><input type="text" id="sms-code-input" placeholder="• • • •" maxlength="4"></div>
                     <button class="btn-submit" onclick="confirmPayment()">Tasdiqlash</button>
                 </div>
@@ -410,22 +422,22 @@ async def index():
             <!-- Promo Tab -->
             <div id="promo-tab" class="tab-content">
                 <div class="panel" style="margin-bottom: 20px;">
-                    <h3 style="margin-bottom: 12px;">Aim Promokod kiritish</h3>
-                    <div class="form-group"><input type="text" id="promo-code-input" placeholder="PROMOKOD"></div>
+                    <h3 style="margin-bottom: 14px; font-size: 18px;">🎁 Promokod Faollashtirish</h3>
+                    <div class="form-group"><input type="text" id="promo-code-input" placeholder="PROMOKODNI KIRITING"></div>
                     <button class="btn-submit" onclick="activatePromo()">Faollashtirish</button>
-                    <p id="promo-msg" style="margin-top: 10px; font-size: 12px; text-align: center; font-weight: 600;"></p>
+                    <p id="promo-msg" style="margin-top: 12px; font-size: 13px; text-align: center; font-weight: 700;"></p>
                 </div>
                 <div class="panel">
-                    <h3 style="margin-bottom: 10px;">Aim Hamkorlik (20% Bonus)</h3>
-                    <p style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">Sizning aim promokodingiz orqali tushgan daromad:</p>
-                    <p style="font-size: 15px; color: #34d399; font-weight: bold; margin-bottom: 12px;"><span id="partner-earned">0</span> Aim</p>
-                    <button class="btn-submit" onclick="loadPartnerStats()">Yangilash</button>
+                    <h3 style="margin-bottom: 10px; font-size: 18px;">🤝 Hamkorlik Dasturi</h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Sizning promokodingiz orqali tushgan daromad:</p>
+                    <p style="font-size: 16px; color: #34d399; font-weight: bold; margin-bottom: 14px;"><span id="partner-earned">0</span> Aim</p>
+                    <button class="btn-submit" onclick="loadPartnerStats()">Statistikani Yangilash</button>
                 </div>
             </div>
         </div>
 
         <nav class="bottom-nav">
-            <button class="nav-item active" onclick="switchTab('cases', this)"><span class="icon">📦</span> <span>Aim Keyslar</span></button>
+            <button class="nav-item active" onclick="switchTab('cases', this)"><span class="icon">📦</span> <span>Keyslar</span></button>
             <button class="nav-item" onclick="switchTab('inventory', this)"><span class="icon">🎒</span> <span>Inventar</span></button>
             <button class="nav-item" onclick="switchTab('games', this)"><span class="icon">🎮</span> <span>O'yinlar</span></button>
             <button class="nav-item" onclick="switchTab('wallet', this)"><span class="icon">💳</span> <span>To'ldirish</span></button>
@@ -465,9 +477,9 @@ async def index():
                     html += `
                         <div class="case-card" onclick="selectCase('${id}', ${c.price_uc}, ${c.price_aim}, '${c.name}', '${c.img}')">
                             <img src="${c.img}" class="case-img">
-                            <h4 style="font-size: 13px; font-weight: 700;">${c.name}</h4>
-                            <p style="color:#fbbf24; margin: 6px 0; font-weight: 800; font-size: 14px;">${c.price_uc} UC <span style="font-size:11px; color:#34d399;">(${c.price_aim} Aim)</span></p>
-                            <button class="btn-open">Aim Tanlash</button>
+                            <h4 style="font-size: 13px; font-weight: 700; margin-top:4px;">${c.name}</h4>
+                            <p style="color:#fbbf24; margin: 6px 0; font-weight: 800; font-size: 13px;">${c.price_uc} UC</p>
+                            <button class="btn-open">Ochish</button>
                         </div>
                     `;
                 }
@@ -483,7 +495,7 @@ async def index():
                 document.querySelectorAll('.count-btn').forEach((b, idx) => b.classList.toggle('active', idx === 0));
                 document.getElementById('detail-name').innerText = name;
                 document.getElementById('detail-img').src = img;
-                document.getElementById('detail-price-text').innerText = `${priceUc} UC (${priceAim} Aim) - 1 ta`;
+                document.getElementById('detail-price-text').innerText = `${priceUc} UC (${priceAim} Aim)`;
                 document.getElementById('win-result').innerText = "";
                 document.getElementById('roulette-section').style.display = 'none';
                 updateOpenCost();
@@ -553,7 +565,7 @@ async def index():
                 }, 50);
 
                 setTimeout(() => {
-                    document.getElementById('win-result').innerText = `🎉 AimDrop barchasi ochildi va inventaringizga qo'shildi!`;
+                    document.getElementById('win-result').innerText = `🎉 Yutuqlar inventaringizga qo'shildi!`;
                 }, 4100);
             }
 
@@ -562,7 +574,7 @@ async def index():
                 let items = await res.json();
                 let grid = document.getElementById('inventory-grid');
                 if(items.length === 0) {
-                    grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #94a3b8; font-size: 13px;">Aim inventari bo'sh.</p>`;
+                    grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); font-size: 13px;">Inventaringiz bo'sh.</p>`;
                     return;
                 }
                 let html = '';
@@ -572,7 +584,7 @@ async def index():
                         <div class="inv-card">
                             <img src="${item.img}">
                             <div style="font-size: 11px; font-weight: bold; margin-bottom: 2px;">${item.name}</div>
-                            <div style="font-size: 10px; color: #fbbf24; font-weight: bold;">${item.val} Aim <span style="color:#34d399">(${ucEq.toFixed(1)} UC)</span></div>
+                            <div style="font-size: 10px; color: #fbbf24; font-weight: bold;">${item.val} Aim</div>
                             <div class="inv-actions">
                                 <button class="btn-sell" onclick="sellItem(${item.id})">Sotish</button>
                                 <button class="btn-keep" onclick="switchTab('inventory', null)">Saqlash</button>
@@ -599,7 +611,6 @@ async def index():
                 }
             }
 
-            // MINI GAMES
             function switchGame(game, btn) {
                 document.querySelectorAll('.sub-game').forEach(el => el.style.display = 'none');
                 document.querySelectorAll('.game-tab-btn').forEach(b => b.classList.remove('active'));
@@ -644,7 +655,7 @@ async def index():
                 let bet = parseFloat(document.getElementById('tower-bet').value) || 10;
                 if(balanceAim < bet) { alert("Aim yetarli emas!"); return; }
                 balanceAim -= bet; updateUI();
-                alert("Aim Tower boshlandi! Qatorni tanlang.");
+                alert("Tower o'yini boshlandi!");
             }
 
             function startCrash() {
@@ -757,10 +768,9 @@ async def sell_item(item_id: int = Form(...), user_id: int = Form(...)):
     item = cursor.fetchone()
     if not item:
         conn.close()
-        return {"success": False, "msg": "Aim buyum topilmadi!"}
+        return {"success": False, "msg": "Buyum topilmadi!"}
     
     aim_val = item["val"]
-    
     cursor.execute("DELETE FROM inventory WHERE id = ?", (item_id,))
     cursor.execute("UPDATE users SET aimcoin = aimcoin + ? WHERE user_id = ?", (aim_val, user_id))
     cursor.execute("SELECT aimcoin FROM users WHERE user_id = ?", (user_id,))
@@ -785,7 +795,7 @@ async def topup_webhook(uc: float = Form(...), user_id: int = Form(...), promo: 
                 if used_count < max_uses:
                     cursor.execute("UPDATE promos SET used_count = used_count + 1 WHERE code = ?", (promo.upper(),))
                     final_uc = uc * 1.20  
-                    bonus_msg = " +20% Aim hamkor promokod bonusi bilan!"
+                    bonus_msg = " +20% Hamkor promokod bonusi qo'shildi!"
                     if owner_id and owner_id != user_id:
                         partner_bonus = (uc / 60) * 100 * 0.20
                         cursor.execute("UPDATE users SET partner_earned = partner_earned + ? WHERE user_id = ?", (partner_bonus, owner_id))
@@ -794,7 +804,7 @@ async def topup_webhook(uc: float = Form(...), user_id: int = Form(...), promo: 
                     return {"success": False, "msg": "Promokod muddati tugagan!"}
             else:
                 conn.close()
-                return {"success": False, "msg": "Bunday aim promokod topilmadi!"}
+                return {"success": False, "msg": "Bunday promokod topilmadi!"}
 
         aim_add = (final_uc / 60) * 100
         cursor.execute("UPDATE users SET aimcoin = aimcoin + ?, total_donated = total_donated + ? WHERE user_id = ?", (aim_add, uc, user_id))
@@ -803,7 +813,7 @@ async def topup_webhook(uc: float = Form(...), user_id: int = Form(...), promo: 
         conn.commit()
     finally:
         conn.close()
-    return {"success": True, "new_aim": new_aim, "msg": f"Aim to'lov bajarildi!{bonus_msg}"}
+    return {"success": True, "new_aim": new_aim, "msg": f"To'lov muvaffaqiyatli bajarildi!{bonus_msg}"}
 
 @app.post("/activate_promo")
 async def activate_promo(code: str = Form(...), user_id: int = Form(...)):
@@ -812,9 +822,9 @@ async def activate_promo(code: str = Form(...), user_id: int = Form(...)):
         cursor = conn.cursor()
         cursor.execute("SELECT reward, max_uses, used_count, owner_id FROM promos WHERE code = ?", (code.upper(),))
         promo = cursor.fetchone()
-        if not promo: return {"success": False, "msg": "Aim promokod topilmadi!"}
+        if not promo: return {"success": False, "msg": "Promokod topilmadi!"}
         reward, max_uses, used_count, owner_id = promo
-        if used_count >= max_uses: return {"success": False, "msg": "Muddati tugagan!"}
+        if used_count >= max_uses: return {"success": False, "msg": "Promokod muddati tugagan!"}
         
         reward_aim = (reward / 60) * 100
         cursor.execute("UPDATE promos SET used_count = used_count + 1 WHERE code = ?", (code.upper(),))
