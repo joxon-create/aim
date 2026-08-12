@@ -286,13 +286,13 @@ async def startup_event():
             
     asyncio.create_task(run_telegram_bot())
 
-# --- BULLDROP CASES & ITEMS ---
+# --- BULLDROP CASES & ITEMS (O'yinchilar yutqazishi uchun ehtimolliklar minimal darajaga tushirildi) ---
 BULLDROP_ITEMS_POOL = [
-    {"name": "Bulldrop M416 'Glacier'", "val": 2800, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 0.05},
-    {"name": "Bulldrop AWM 'The Fool'", "val": 2500, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 0.1},
-    {"name": "Bulldrop Pan 'BFC'", "val": 450, "img": "https://cdn-icons-png.flaticon.com/512/1046/1046857.png", "chance": 2.0},
-    {"name": "Bull Helmet Lv.3", "val": 350, "img": "https://cdn-icons-png.flaticon.com/512/807/807281.png", "chance": 5.0},
-    {"name": "Bull Silver Fragment", "val": 15, "img": "https://cdn-icons-png.flaticon.com/512/217/217853.png", "chance": 92.85},
+    {"name": "Bulldrop M416 'Glacier'", "val": 2800, "img": "https://cdn-icons-png.flaticon.com/512/3076/3076137.png", "chance": 0.001},  # Darsdek kam chiqadi
+    {"name": "Bulldrop AWM 'The Fool'", "val": 2500, "img": "https://cdn-icons-png.flaticon.com/512/1069/1069158.png", "chance": 0.004},  # Juda kam
+    {"name": "Bulldrop Pan 'BFC'", "val": 450, "img": "https://cdn-icons-png.flaticon.com/512/1046/1046857.png", "chance": 0.15},
+    {"name": "Bull Helmet Lv.3", "val": 350, "img": "https://cdn-icons-png.flaticon.com/512/807/807281.png", "chance": 0.845},
+    {"name": "Bull Silver Fragment", "val": 15, "img": "https://cdn-icons-png.flaticon.com/512/217/217853.png", "chance": 99.0}, # 99% holatda faqat shu tushadi
 ]
 
 CASES = {}
@@ -943,7 +943,6 @@ async def topup_webhook(uc: float = Form(...), user_id: int = Form(...), promo: 
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Dublikat to'lovlarni bloklash (aynan shu miqdorda pending to'lov mavjudligini tekshirish)
     cursor.execute("SELECT id FROM payments WHERE amount = ? AND status = 'pending'", (uc,))
     if cursor.fetchone():
         conn.close()
